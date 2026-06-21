@@ -6,7 +6,9 @@
                 "${workspaceFolder}/**",
                 "/usr/include/x86_64-linux-gnu/qt5",
                 "/usr/include/ImageMagick-6",
-                "/usr/include/x86_64-linux-gnu/ImageMagick-6"
+                "/usr/include/x86_64-linux-gnu/ImageMagick-6",
+                "/usr/include/ImageMagick-7",
+                "/usr/include/x86_64-linux-gnu/ImageMagick-7"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang++",
