@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  deb:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: debian
+            codename: trixie
+            image: debian:trixie
+          - distro: ubuntu
+            codename: ubuntu2604
+            image: ubuntu:26.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build deb in container
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          PKGNAME="qpdfImageEmbed_${VERSION}_amd64"
+
+          docker run --rm \
+            -v "${{ github.workspace }}:/src" \
+            -w /src \
+            -e DEBIAN_FRONTEND=noninteractive \
+            -e PKGNAME="${PKGNAME}" \
+            -e VERSION="${VERSION}" \
+            ${{ matrix.image }} \
+            bash -c '
+              set -euo pipefail
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                build-essential cmake pkg-config dpkg-dev \
+                libqpdf-dev \
+                libmagick++-7.q16-dev \
+                libqrencode-dev \
+                libboost-program-options-dev
+
+              cmake -S . -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=/usr
+
+              cmake --build build -j"$(nproc)"
+
+              DESTDIR=/tmp/staging cmake --install build
+
+              mkdir -p "${PKGNAME}/DEBIAN"
+              cp -a /tmp/staging/usr "${PKGNAME}/usr"
+
+              RUNTIME_DEPS=$(dpkg-shlibdeps -O \
+                build/src/qpdfImageEmbed \
+                build/tests/test_integration \
+                2>/dev/null \
+                | tail -1 \
+                | sed "s/^shlibs:Depends=//" || true)
+
+              if [ -z "${RUNTIME_DEPS}" ]; then
+                RUNTIME_DEPS="libqpdf29, libmagick++-7.q16-11, libqrencode4, libboost-program-options1.83.0"
+              fi
+
+              printf "Package: qpdfImageEmbed\n" > "${PKGNAME}/DEBIAN/control"
+              printf "Version: %s\n" "${VERSION}" >> "${PKGNAME}/DEBIAN/control"
+              printf "Architecture: amd64\n" >> "${PKGNAME}/DEBIAN/control"
+              printf "Depends: %s\n" "${RUNTIME_DEPS}" >> "${PKGNAME}/DEBIAN/control"
+              printf "Maintainer: oscar\n" >> "${PKGNAME}/DEBIAN/control"
+              printf "Description: PDF utility that stamps images, QR codes, and text onto existing PDF pages\n" >> "${PKGNAME}/DEBIAN/control"
+
+              dpkg-deb --root-owner-group --build "${PKGNAME}"
+              cp "${PKGNAME}.deb" /src/
+            "
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.distro }}-${{ matrix.codename }}-deb
+          path: qpdfImageEmbed_*.deb

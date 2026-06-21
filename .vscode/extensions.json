@@ -8,6 +8,7 @@
 		"cardinal90.multi-cursor-case-preserve",
 		"yzhang.markdown-all-in-one",
 		"davidanson.vscode-markdownlint",
-		"albert.tabout"
+		"albert.tabout",
+		"github.vscode-github-actions"
 	]
 }

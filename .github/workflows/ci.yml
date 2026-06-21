@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: debian:trixie
+            name: Debian 13
+          - image: ubuntu:26.04
+            name: Ubuntu 26.04
+    name: Tests (${{ matrix.name }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential cmake pkg-config git \
+            libqpdf-dev \
+            libmagick++-7.q16-dev \
+            libqrencode-dev \
+            libboost-program-options-dev \
+            valgrind
+
+      - name: Configure
+        run: cmake -S . -B build -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Run tests
+        run: ctest --output-on-failure --test-dir build
+
+      - name: Run valgrind
+        run: |
+          for test_bin in build/tests/test_*; do
+            if [ -x "$test_bin" ]; then
+              echo "=== Valgrind: $test_bin ==="
+              valgrind --leak-check=full --error-exitcode=1 --track-origins=yes "$test_bin"
+            fi
+          done
