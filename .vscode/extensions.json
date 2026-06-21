@@ -1,0 +1,14 @@
+{
+	"recommendations": [
+		"ms-vscode.cpptools-extension-pack",
+		"twxs.cmake",
+		"streetsidesoftware.code-spell-checker",
+		"mhutchie.git-graph",
+		"streetsidesoftware.code-spell-checker-greek",
+		"nhoizey.gremlins",
+		"cardinal90.multi-cursor-case-preserve",
+		"yzhang.markdown-all-in-one",
+		"davidanson.vscode-markdownlint",
+		"albert.tabout"
+	]
+}
