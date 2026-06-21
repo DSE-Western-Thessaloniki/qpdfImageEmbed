@@ -14,6 +14,10 @@ ExtraText::ExtraText(std::string text) {
                        [](std::string const &s) { return s.size() == 0; }),
         tokenized.end());
 
+    if (tokenized.empty()) {
+        return;
+    }
+
     const std::regex pos_r("^(\\d+\\.*\\d*),(\\d+\\.*\\d*)$");
     const std::regex size_r("^(\\d+\\.*\\d*)$");
     const std::regex style_r("^([i,b]{1,2})$");
@@ -21,7 +25,6 @@ ExtraText::ExtraText(std::string text) {
     for (auto token : tokenized) {
         std::smatch match;
 
-        // If position match is found
         if (std::regex_match(token, match, pos_r)) {
             m_x = std::stof(match[1].str());
             m_y = std::stof(match[2].str());
