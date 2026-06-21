@@ -220,13 +220,13 @@ readCLIOptions(int argc, char *argv[]) {
     if (vm.count("img-top-margin")) {
         cliOption["img-top-margin"] = vm["img-top-margin"].as<float>();
     } else {
-        cliOption["img-top-margin"] = 0;
+        cliOption["img-top-margin"] = 0.0f;
     }
 
     if (vm.count("img-side-margin")) {
         cliOption["img-side-margin"] = vm["img-side-margin"].as<float>();
     } else {
-        cliOption["img-side-margin"] = 0;
+        cliOption["img-side-margin"] = 0.0f;
     }
 
     cliOption["img-link-to"] = vm["img-link-to"].as<std::string>();
@@ -245,7 +245,7 @@ readCLIOptions(int argc, char *argv[]) {
 
     if ((argc < 4) ||
         (!cliOption.contains("qrText") && !cliOption.contains("imageFile") &&
-         !cliOption.contains("text")) ||
+         std::get<std::vector<std::string>>(cliOption["text"]).empty()) ||
         vm.empty() || vm.count("help")) {
         std::cout << programOptions << std::endl;
         exit(1);
