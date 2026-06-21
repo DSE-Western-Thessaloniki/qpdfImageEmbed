@@ -1,7 +1,6 @@
 {
 	"recommendations": [
 		"ms-vscode.cpptools-extension-pack",
-		"twxs.cmake",
 		"streetsidesoftware.code-spell-checker",
 		"mhutchie.git-graph",
 		"streetsidesoftware.code-spell-checker-greek",
