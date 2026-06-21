@@ -1,0 +1,2 @@
+set(CTEST_MEMORYCHECK_COMMAND "valgrind")
+set(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --error-exitcode=1 --track-origins=yes")

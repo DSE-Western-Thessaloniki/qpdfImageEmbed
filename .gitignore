@@ -27,8 +27,8 @@
 *.out
 *.app
 
-*.pdf
-*.png
+/*.pdf
+/*.png
 
 qpdfImageEmbed
 .vscode/*.log
