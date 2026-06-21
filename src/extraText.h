@@ -1,3 +1,6 @@
+#ifndef EXTRATEXT_H
+#define EXTRATEXT_H
+
 #include <string>
 
 class ExtraText {
@@ -16,3 +19,5 @@ class ExtraText {
         std::string text(void);
         std::string style(void);
 };
+
+#endif // EXTRATEXT_H
