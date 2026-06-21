@@ -27,7 +27,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential cmake pkg-config git \
+            ca-certificates build-essential cmake pkg-config git \
             libqpdf-dev \
             libmagick++-7.q16-dev \
             libqrencode-dev \
