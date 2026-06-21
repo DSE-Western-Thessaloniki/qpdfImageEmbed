@@ -77,7 +77,6 @@ jobs:
               printf "Description: PDF utility that stamps images, QR codes, and text onto existing PDF pages\n" >> "${PKGNAME}/DEBIAN/control"
 
               dpkg-deb --root-owner-group --build "${PKGNAME}"
-              cp "${PKGNAME}.deb" /src/
             '
 
       - uses: actions/upload-artifact@v4
