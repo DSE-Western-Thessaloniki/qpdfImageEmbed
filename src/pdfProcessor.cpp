@@ -159,7 +159,7 @@ void PDFProcessor::createImageStream(ImageProvider *p, std::string name) {
     logger << "Transparency image string: " << transparencyImageString << "\n";
     transparency.replaceDict(QPDFObjectHandle::parse(transparencyImageString));
     // Provide the stream data.
-    std::shared_ptr<Buffer> transparencyProvider(p->getAlpha());
+    auto transparencyProvider = p->getAlpha();
     logger << "Buffer size: " << transparencyProvider.get()->getSize() << "\n";
     transparency.replaceStreamData(transparencyProvider,
                                    QPDFObjectHandle::newNull(),

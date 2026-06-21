@@ -48,10 +48,13 @@ ImageProvider::ImageProvider(const QRcode *qr) {
     processImage();
 }
 
-ImageProvider::~ImageProvider() {}
+ImageProvider::~ImageProvider() {
+    delete[] rgbData;
+    delete[] alphaData;
+}
 
 void ImageProvider::provideStreamData(int objid, int generation,
-                                      Pipeline *pipeline) {
+                                       Pipeline *pipeline) {
     // If we have an empty image
     if (filename.empty() && qr == nullptr) {
         // Paint an orange rectangle
@@ -68,7 +71,7 @@ int ImageProvider::getHeight() { return height; }
 
 int ImageProvider::getWidth() { return width; }
 
-Buffer *ImageProvider::getAlpha() { return alphaBuf; }
+std::shared_ptr<Buffer> ImageProvider::getAlpha() { return alphaBuf; }
 
 void ImageProvider::processImage() {
     Magick::Geometry geometry = img.size();
@@ -80,7 +83,7 @@ void ImageProvider::processImage() {
 
     alphaData = new unsigned char[width * height];
     img.write(0, 0, width, height, "A", StorageType::CharPixel, alphaData);
-    alphaBuf = new Buffer(alphaData, width * height);
+    alphaBuf = std::make_shared<Buffer>(alphaData, width * height);
 
     rgbData = new unsigned char[width * height * 3];
     img.write(0, 0, width, height, "RGB", StorageType::CharPixel, rgbData);

@@ -2,6 +2,7 @@
 #define IMAGEPROVIDER_H
 
 #include <Magick++/Image.h>
+#include <memory>
 #include <qpdf/Buffer.hh>
 #include <qpdf/QPDF.hh>
 #include <qpdf/QPDFObjectHandle.hh>
@@ -19,16 +20,16 @@ class ImageProvider : public QPDFObjectHandle::StreamDataProvider {
                                        Pipeline *pipeline);
         int getWidth();
         int getHeight();
-        Buffer *getAlpha();
+        std::shared_ptr<Buffer> getAlpha();
 
     private:
         int width;
         int height;
         std::string filename;
         Magick::Image img;
-        Buffer *alphaBuf;
-        unsigned char *alphaData;
-        unsigned char *rgbData;
+        std::shared_ptr<Buffer> alphaBuf;
+        unsigned char *alphaData = nullptr;
+        unsigned char *rgbData = nullptr;
         const QRcode *qr;
 
         void processImage();
