@@ -79,6 +79,9 @@ jobs:
               dpkg-deb --root-owner-group --build "${PKGNAME}"
             '
 
+      - name: Rename deb with distro suffix
+        run: mv qpdfImageEmbed_*.deb "qpdfImageEmbed_${{ steps.version.outputs.version }}_${{ matrix.codename }}_amd64.deb"
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.distro }}-${{ matrix.codename }}-deb
