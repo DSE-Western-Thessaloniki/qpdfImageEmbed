@@ -78,7 +78,7 @@ jobs:
 
               dpkg-deb --root-owner-group --build "${PKGNAME}"
               cp "${PKGNAME}.deb" /src/
-            "
+            '
 
       - uses: actions/upload-artifact@v4
         with:
