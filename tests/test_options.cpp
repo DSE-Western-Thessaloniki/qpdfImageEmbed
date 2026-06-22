@@ -101,3 +101,49 @@ TEST(OptionsDeathTest, QrSideOutOfRange) {
     EXPECT_EXIT(readCLIOptions(argc, const_cast<char **>(argv)),
                 testing::ExitedWithCode(2), "");
 }
+
+// Validation should rely on content options, not argc.
+// These tests verify that the minimum-argc heuristic (argc < 4) is not needed
+// and that content-based validation catches all invalid cases.
+
+TEST(OptionsTest, ValidStampOnly) {
+    int argc = 7;
+    const char *argv[] = {"qpdfImageEmbed", "-i", "in.pdf", "-o",
+                          "out.pdf",        "--stamp", "img.png", nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv));
+    EXPECT_EQ(std::get<std::string>(opts["inputPDF"]), "in.pdf");
+    EXPECT_EQ(std::get<std::string>(opts["outputPDF"]), "out.pdf");
+    EXPECT_EQ(std::get<std::string>(opts["imageFile"]), "img.png");
+}
+
+TEST(OptionsTest, ValidAddTextOnly) {
+    int argc = 7;
+    const char *argv[] = {"qpdfImageEmbed", "-i", "in.pdf", "-o",
+                          "out.pdf",        "--add-text", "hello", nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv));
+    EXPECT_EQ(std::get<std::string>(opts["inputPDF"]), "in.pdf");
+    EXPECT_EQ(std::get<std::string>(opts["outputPDF"]), "out.pdf");
+    auto text = std::get<std::vector<std::string>>(opts["text"]);
+    ASSERT_EQ(text.size(), 1);
+    EXPECT_EQ(text[0], "hello");
+}
+
+TEST(OptionsTest, MinimumArgcWithContent) {
+    // argc=7 is the minimum for a valid invocation: prog -i file -o file --qr text
+    // The argc < 4 heuristic should never trigger for valid calls.
+    int argc = 7;
+    const char *argv[] = {"qpdfImageEmbed", "-i", "a.pdf", "-o",
+                          "b.pdf",          "--qr", "data", nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv));
+    EXPECT_EQ(std::get<std::string>(opts["qrText"]), "data");
+}
+
+TEST(OptionsDeathTest, MissingContentCaughtWithoutArgcCheck) {
+    // Even with argc >= 4, missing content must be rejected.
+    // This validates that the content check (not argc) is the real guard.
+    int argc = 5;
+    const char *argv[] = {"qpdfImageEmbed", "-i", "in.pdf", "-o", "out.pdf",
+                          nullptr};
+    EXPECT_EXIT(readCLIOptions(argc, const_cast<char **>(argv)),
+                testing::ExitedWithCode(1), "");
+}

@@ -243,8 +243,7 @@ readCLIOptions(int argc, char *argv[]) {
         logger.setEnabled(true);
     }
 
-    if ((argc < 4) ||
-        (!cliOption.contains("qrText") && !cliOption.contains("imageFile") &&
+    if ((!cliOption.contains("qrText") && !cliOption.contains("imageFile") &&
          std::get<std::vector<std::string>>(cliOption["text"]).empty()) ||
         vm.empty() || vm.count("help")) {
         std::cout << programOptions << std::endl;
