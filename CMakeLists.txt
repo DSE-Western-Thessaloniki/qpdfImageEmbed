@@ -13,6 +13,7 @@ add_subdirectory(src)
 option(BUILD_TESTS "Build unit tests" OFF)
 if(BUILD_TESTS)
     enable_testing()
+    include(CTest)
 
     include(FetchContent)
     FetchContent_Declare(
