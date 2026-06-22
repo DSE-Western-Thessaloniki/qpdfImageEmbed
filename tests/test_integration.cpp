@@ -155,6 +155,246 @@ TEST(PDFProcessorTest, EmbedImageWithLink) {
 }
 
 // ============================================================
+// Font name collision tests
+// ============================================================
+
+static void createPDFWithFonts(
+    const std::string &path,
+    const std::vector<std::pair<std::string, std::string>> &fonts) {
+    std::string blankPath = std::string(TEST_DATA_DIR) + "/blank.pdf";
+
+    QPDF pdf;
+    pdf.processFile(blankPath.c_str());
+    auto pages = pdf.getAllPages();
+    ASSERT_EQ(pages.size(), 1);
+    QPDFObjectHandle page = pages.at(0);
+
+    QPDFObjectHandle resources = page.getKey("/Resources");
+    if (!resources.isDictionary()) {
+        resources = QPDFObjectHandle::newDictionary();
+        page.replaceKey("/Resources", resources);
+    }
+
+    QPDFObjectHandle fontsDict = resources.getKey("/Font");
+    if (!fontsDict.isDictionary()) {
+        fontsDict = QPDFObjectHandle::newDictionary();
+        resources.replaceKey("/Font", fontsDict);
+    }
+
+    for (const auto &[name, basefont] : fonts) {
+        QPDFObjectHandle f = QPDFObjectHandle::parse(
+            "<< /Type /Font /Subtype /Type1 /BaseFont /" + basefont + " >>");
+        fontsDict.replaceKey(name.c_str(), f);
+    }
+
+    QPDFWriter writer(pdf, path.c_str());
+    writer.write();
+}
+
+TEST(PDFProcessorTest, AddExtraTextNoFontCollision) {
+    std::string setupPath =
+        std::string(TEST_DATA_DIR) + "/_test_font_setup.pdf";
+    std::string outPath =
+        std::string(TEST_DATA_DIR) + "/_test_font_no_collision.pdf";
+
+    // Create a PDF with /F2 and /F3 already defined (gap at /F1)
+    createPDFWithFonts(setupPath, {{"/F2", "Times-Roman"}, {"/F3", "Courier"}});
+
+    {
+        PDFProcessor proc;
+        ASSERT_TRUE(proc.open(setupPath));
+        proc.addExtraText("Hello", 100, 100, 12, "Helvetica", "");
+        proc.save(outPath);
+    }
+
+    // Verify: /F1 should be the new font, /F2 and /F3 should be untouched
+    {
+        QPDF verify;
+        verify.processFile(outPath.c_str());
+        auto pages = verify.getAllPages();
+        ASSERT_EQ(pages.size(), 1);
+
+        QPDFObjectHandle fonts =
+            pages.at(0).getKey("/Resources").getKey("/Font");
+        ASSERT_TRUE(fonts.isDictionary());
+
+        EXPECT_TRUE(fonts.hasKey("/F1"))
+            << "New font must occupy the first free slot /F1";
+        EXPECT_TRUE(fonts.hasKey("/F2")) << "/F2 must be preserved";
+        EXPECT_TRUE(fonts.hasKey("/F3")) << "/F3 must be preserved";
+
+        // New font must have the right BaseFont
+        std::string bf =
+            fonts.getKey("/F1").getKey("/BaseFont").getName();
+        EXPECT_EQ(bf, "/Helvetica");
+    }
+
+    std::remove(setupPath.c_str());
+    std::remove(outPath.c_str());
+}
+
+TEST(PDFProcessorTest, AddExtraTextExistingFontReused) {
+    std::string setupPath =
+        std::string(TEST_DATA_DIR) + "/_test_font_reuse_setup.pdf";
+    std::string outPath =
+        std::string(TEST_DATA_DIR) + "/_test_font_reuse_out.pdf";
+
+    // Create a PDF with /F1 that already has Helvetica
+    createPDFWithFonts(setupPath, {{"/F1", "Helvetica"}});
+
+    {
+        PDFProcessor proc;
+        ASSERT_TRUE(proc.open(setupPath));
+        // Adding the same basefont should reuse /F1, not create /F2
+        proc.addExtraText("World", 200, 200, 14, "Helvetica", "");
+        proc.save(outPath);
+    }
+
+    {
+        QPDF verify;
+        verify.processFile(outPath.c_str());
+        auto pages = verify.getAllPages();
+        QPDFObjectHandle fonts =
+            pages.at(0).getKey("/Resources").getKey("/Font");
+        ASSERT_TRUE(fonts.isDictionary());
+
+        // Should still only have /F1 (reused), no /F2 created
+        auto keys = fonts.getKeys();
+        int count = 0;
+        for (const auto &k : keys)
+            if (k.substr(0, 2) == "/F")
+                count++;
+        EXPECT_EQ(count, 1) << "Must reuse existing /F1, not create a new one";
+
+        // The content stream must reference /F1 (not /F12 or similar).
+        // Extract the content stream and verify the font reference.
+        QPDFObjectHandle contents = pages.at(0).getKey("/Contents");
+        ASSERT_FALSE(contents.isNull());
+        // Contents may be a stream or an array of streams
+        std::string streamData;
+        auto extractStream = [&streamData](QPDFObjectHandle s) {
+            auto buf = s.getStreamData(qpdf_dl_generalized);
+            streamData.append(
+                reinterpret_cast<const char*>(buf->getBuffer()),
+                buf->getSize());
+        };
+        if (contents.isStream()) {
+            extractStream(contents);
+        } else if (contents.isArray()) {
+            for (int i = 0; i < contents.getArrayNItems(); i++) {
+                QPDFObjectHandle item = contents.getArrayItem(i);
+                if (item.isStream()) {
+                    extractStream(item);
+                }
+            }
+        }
+        // Stream must reference /F1 as a standalone font name
+        EXPECT_NE(streamData.find("/F1 "), std::string::npos)
+            << "Stream must reference /F1, not a mangled name";
+        // Must NOT contain /F12 — the increment should not be appended
+        EXPECT_EQ(streamData.find("/F12"), std::string::npos)
+            << "Stream must NOT reference /F12 (increment appended to found name)";
+    }
+
+    std::remove(setupPath.c_str());
+    std::remove(outPath.c_str());
+}
+
+TEST(PDFProcessorTest, AddExtraTextMultipleNewFonts) {
+    std::string setupPath =
+        std::string(TEST_DATA_DIR) + "/_test_font_multi_setup.pdf";
+    std::string outPath =
+        std::string(TEST_DATA_DIR) + "/_test_font_multi_out.pdf";
+
+    // Start with empty font dictionary
+    createPDFWithFonts(setupPath, {});
+
+    {
+        PDFProcessor proc;
+        ASSERT_TRUE(proc.open(setupPath));
+        proc.addExtraText("First", 10, 10, 10, "Helvetica", "");
+        proc.addExtraText("Second", 20, 20, 10, "Times-Roman", "");
+        proc.addExtraText("Third", 30, 30, 10, "Courier", "");
+        proc.save(outPath);
+    }
+
+    {
+        QPDF verify;
+        verify.processFile(outPath.c_str());
+        auto pages = verify.getAllPages();
+        QPDFObjectHandle fonts =
+            pages.at(0).getKey("/Resources").getKey("/Font");
+        ASSERT_TRUE(fonts.isDictionary());
+
+        EXPECT_TRUE(fonts.hasKey("/F1"));
+        EXPECT_TRUE(fonts.hasKey("/F2"));
+        EXPECT_TRUE(fonts.hasKey("/F3"));
+
+        // No extras beyond F1-F3
+        auto keys = fonts.getKeys();
+        int count = 0;
+        for (const auto &k : keys)
+            if (k.substr(0, 2) == "/F")
+                count++;
+        EXPECT_EQ(count, 3);
+
+        // Each font must have the right BaseFont
+        EXPECT_EQ(fonts.getKey("/F1").getKey("/BaseFont").getName(),
+                  "/Helvetica");
+        EXPECT_EQ(fonts.getKey("/F2").getKey("/BaseFont").getName(),
+                  "/Times-Roman");
+        EXPECT_EQ(fonts.getKey("/F3").getKey("/BaseFont").getName(),
+                  "/Courier");
+    }
+
+    std::remove(setupPath.c_str());
+    std::remove(outPath.c_str());
+}
+
+TEST(PDFProcessorTest, AddExtraTextNoFontCollisionWithExisting) {
+    std::string setupPath =
+        std::string(TEST_DATA_DIR) + "/_test_font_collision_existing.pdf";
+    std::string outPath =
+        std::string(TEST_DATA_DIR) + "/_test_font_collision_existing_out.pdf";
+
+    // Create a PDF with /F1 (Helvetica) and /F2 (Courier).
+    // Adding a NEW font (Times-Roman) must produce /F3, not overwrite.
+    createPDFWithFonts(setupPath,
+                       {{"/F1", "Helvetica"}, {"/F2", "Courier"}});
+
+    {
+        PDFProcessor proc;
+        ASSERT_TRUE(proc.open(setupPath));
+        proc.addExtraText("New", 50, 50, 10, "Times-Roman", "");
+        proc.save(outPath);
+    }
+
+    {
+        QPDF verify;
+        verify.processFile(outPath.c_str());
+        auto pages = verify.getAllPages();
+        QPDFObjectHandle fonts =
+            pages.at(0).getKey("/Resources").getKey("/Font");
+        ASSERT_TRUE(fonts.isDictionary());
+
+        EXPECT_TRUE(fonts.hasKey("/F1")) << "/F1 must be preserved";
+        EXPECT_TRUE(fonts.hasKey("/F2")) << "/F2 must be preserved";
+        EXPECT_TRUE(fonts.hasKey("/F3"))
+            << "New font must be added at /F3 without collision";
+
+        EXPECT_EQ(fonts.getKey("/F1").getKey("/BaseFont").getName(),
+                  "/Helvetica");
+        EXPECT_EQ(fonts.getKey("/F2").getKey("/BaseFont").getName(),
+                  "/Courier");
+        EXPECT_EQ(fonts.getKey("/F3").getKey("/BaseFont").getName(),
+                  "/Times-Roman");
+    }
+
+    std::remove(setupPath.c_str());
+    std::remove(outPath.c_str());
+}
+
+// ============================================================
 // CLI end-to-end tests
 // ============================================================
 

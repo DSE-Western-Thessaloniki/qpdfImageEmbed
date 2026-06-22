@@ -351,17 +351,11 @@ void PDFProcessor::addExtraText(std::string text, float x, float y,
     std::string new_font_name = "/F";
     int font_name_increment = 1;
     bool found = false;
-    std::string found_name;
+    std::string extra_text_font_name;
     auto font_names = fonts.getKeys();
 
     // Look for the font
     for (auto font_name : font_names) {
-        // Test if /F + i is the name of the font
-        if ((new_font_name + std::to_string(font_name_increment)) ==
-            font_name) {
-            font_name_increment++;
-        }
-
         QPDFObjectHandle f = fonts.getKeyIfDict(font_name);
 
         if (f.isNull())
@@ -374,25 +368,31 @@ void PDFProcessor::addExtraText(std::string text, float x, float y,
         if (basefont.isName() &&
             basefont.getName() == "/" + basefont_full_name) {
             found = true;
-            found_name = font_name;
+            extra_text_font_name = font_name;
         }
     }
 
     if (!found) {
+        // Find the first free /F<n> name
+        while (fonts.hasKey(
+            (new_font_name + std::to_string(font_name_increment)).c_str())) {
+            font_name_increment++;
+        }
         // Add the new font to the fonts dictionary
         fonts.replaceKey(new_font_name + std::to_string(font_name_increment),
                          newFont);
-    } else {
-        new_font_name = found_name;
+        extra_text_font_name =
+            new_font_name + std::to_string(font_name_increment);
     }
 
     m_firstPage.addPageContents(
         QPDFObjectHandle::newStream(
-            &m_pdf,
-            "BT " + new_font_name + std::to_string(font_name_increment) + " " +
-                std::to_string(font_size) + " Tf 1 0 0 1 " + std::to_string(x) +
-                " " + std::to_string(y) + " Tm (" + text + ") Tj ET"),
+            &m_pdf, "BT " + extra_text_font_name + " " +
+                        std::to_string(font_size) + " Tf 1 0 0 1 " +
+                        std::to_string(x) + " " + std::to_string(y) + " Tm (" +
+                        text + ") Tj ET"),
         false);
+
     logger << "Adding text...\n";
 }
 
