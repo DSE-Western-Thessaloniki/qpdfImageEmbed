@@ -2,7 +2,8 @@
 #include "logger.h"
 #include <regex>
 
-ExtraText::ExtraText(std::string text) {
+ExtraText::ExtraText(const std::string& text, Logger& logger)
+    : m_logger(logger) {
     const std::regex re(":");
 
     std::sregex_token_iterator it{text.begin(), text.end(), re, -1};
@@ -29,13 +30,13 @@ ExtraText::ExtraText(std::string text) {
             m_x = std::stof(match[1].str());
             m_y = std::stof(match[2].str());
 
-            logger << "ExtraText.(x,y) = (" << m_x << "," << m_y << ")\n";
+            m_logger << "ExtraText.(x,y) = (" << m_x << "," << m_y << ")\n";
         }
 
         if (std::regex_match(token, match, size_r)) {
             m_font_size = std::stof(match[1]);
 
-            logger << "ExtraText.font_size = " << m_font_size << "\n";
+            m_logger << "ExtraText.font_size = " << m_font_size << "\n";
         }
 
         if (std::regex_match(token, match, style_r)) {
@@ -51,22 +52,22 @@ ExtraText::ExtraText(std::string text) {
                 m_style = "BoldOblique";
             }
 
-            logger << "ExtraText.style = " << m_style << "\n";
+            m_logger << "ExtraText.style = " << m_style << "\n";
         }
     }
 
     m_text = tokenized.back();
-    logger << "ExtraText.text = " << m_text << "\n";
+    m_logger << "ExtraText.text = " << m_text << "\n";
 }
 
 ExtraText::~ExtraText() {}
 
-float ExtraText::x(void) { return m_x; }
+float ExtraText::x(void) const { return m_x; }
 
-float ExtraText::y(void) { return m_y; }
+float ExtraText::y(void) const { return m_y; }
 
-float ExtraText::font_size(void) { return m_font_size; }
+float ExtraText::font_size(void) const { return m_font_size; }
 
-std::string ExtraText::style(void) { return m_style; }
+const std::string& ExtraText::style(void) const { return m_style; }
 
-std::string ExtraText::text(void) { return m_text; }
+const std::string& ExtraText::text(void) const { return m_text; }

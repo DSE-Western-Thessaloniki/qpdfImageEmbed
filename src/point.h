@@ -10,8 +10,8 @@ class Point {
         Point();
         Point(float x, float y);
 
-        float x();
-        float y();
+        float x() const;
+        float y() const;
 };
 
 #endif // POINT_H

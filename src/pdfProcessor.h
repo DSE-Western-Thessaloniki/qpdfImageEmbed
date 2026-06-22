@@ -2,6 +2,7 @@
 #define PDFPROCESSOR_H
 
 #include "imageProvider.h"
+#include "logger.h"
 #include "point.h"
 #include "rect.h"
 #include <qpdf/QPDF.hh>
@@ -16,24 +17,25 @@ class PDFProcessor {
         QPDFObjectHandle m_xobject;
         QPDFObjectHandle m_firstPage;
         QPDFObjectHandle m_mediabox;
+        Logger& m_logger;
 
         std::string rand_str(int length);
-        std::string createNewImageName(std::string prefix);
-        void createImageStream(ImageProvider *p, std::string name);
+        std::string createNewImageName(const std::string& prefix);
+        void createImageStream(ImageProvider *p, const std::string& name);
 
     public:
-        PDFProcessor(/* args */);
+        PDFProcessor(Logger& logger);
         ~PDFProcessor();
 
-        bool open(const std::string filename);
+        bool open(const std::string& filename);
         void rotate(int degrees);
         void setPosition(int side);
         void addImage(ImageProvider *p, float scale, float topMargin,
-                      float sideMargin, std::string link = "",
+                      float sideMargin, const std::string& link = "",
                       Point *exactPosition = nullptr);
-        void addExtraText(std::string text, float x, float y, float font_size,
-                          std::string basefont, std::string style);
-        void save(const std::string filename);
+        void addExtraText(const std::string& text, float x, float y, float font_size,
+                          const std::string& basefont, const std::string& style);
+        void save(const std::string& filename);
 };
 
 #endif // PDFPROCESSOR_H

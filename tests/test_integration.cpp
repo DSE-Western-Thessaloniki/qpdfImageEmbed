@@ -37,7 +37,7 @@ public:
 
 TEST(ImageProviderTest, LoadFromPPM) {
     std::string path = std::string(TEST_DATA_DIR) + "/test_image.ppm";
-    ImageProvider *img = new ImageProvider(path);
+    ImageProvider *img = new ImageProvider(path, logger);
     EXPECT_EQ(img->getWidth(), 100);
     EXPECT_EQ(img->getHeight(), 100);
     delete img;
@@ -47,7 +47,7 @@ TEST(ImageProviderTest, CreateFromQR) {
     QRcode *qr = QRcode_encodeString("qpdfImageEmbed test", 0, QR_ECLEVEL_M,
                                      QR_MODE_8, 1);
     ASSERT_NE(qr, nullptr);
-    ImageProvider *img = new ImageProvider(qr);
+    ImageProvider *img = new ImageProvider(qr, logger);
     EXPECT_EQ(img->getWidth(), qr->width);
     EXPECT_EQ(img->getHeight(), qr->width);
     QRcode_free(qr);
@@ -60,7 +60,7 @@ TEST(ImageProviderTest, CreateFromQR) {
 
 TEST(PDFProcessorTest, OpenBlankPDF) {
     std::string path = std::string(TEST_DATA_DIR) + "/blank.pdf";
-    PDFProcessor proc;
+    PDFProcessor proc(logger);
     EXPECT_TRUE(proc.open(path));
 }
 
@@ -68,7 +68,7 @@ TEST(PDFProcessorTest, OpenAndSave) {
     std::string inPath = std::string(TEST_DATA_DIR) + "/blank.pdf";
     std::string outPath = std::string(TEST_DATA_DIR) + "/_test_output.pdf";
 
-    PDFProcessor proc;
+    PDFProcessor proc(logger);
     ASSERT_TRUE(proc.open(inPath));
     proc.save(outPath);
 
@@ -91,10 +91,10 @@ TEST(PDFProcessorTest, EmbedImageAndVerify) {
     std::string imgPath = std::string(TEST_DATA_DIR) + "/test_image.ppm";
     std::string outPath = std::string(TEST_DATA_DIR) + "/_test_embed.pdf";
 
-    PDFProcessor proc;
+    PDFProcessor proc(logger);
     ASSERT_TRUE(proc.open(inPath));
 
-    ImageProvider *img = new ImageProvider(imgPath);
+    ImageProvider *img = new ImageProvider(imgPath, logger);
     proc.addImage(img, 0.5f, 10.0f, 10.0f);
 
     proc.save(outPath);
@@ -113,13 +113,13 @@ TEST(PDFProcessorTest, EmbedQRAndVerify) {
     std::string inPath = std::string(TEST_DATA_DIR) + "/blank.pdf";
     std::string outPath = std::string(TEST_DATA_DIR) + "/_test_qr.pdf";
 
-    PDFProcessor proc;
+    PDFProcessor proc(logger);
     ASSERT_TRUE(proc.open(inPath));
 
     QRcode *qr = QRcode_encodeString("https://example.com", 0, QR_ECLEVEL_M,
                                      QR_MODE_8, 1);
     ASSERT_NE(qr, nullptr);
-    ImageProvider *qrImg = new ImageProvider(qr);
+    ImageProvider *qrImg = new ImageProvider(qr, logger);
     QRcode_free(qr);
 
     proc.addImage(qrImg, 1.0f, 10.0f, 10.0f);
@@ -136,10 +136,10 @@ TEST(PDFProcessorTest, EmbedImageWithLink) {
     std::string imgPath = std::string(TEST_DATA_DIR) + "/test_image.ppm";
     std::string outPath = std::string(TEST_DATA_DIR) + "/_test_link.pdf";
 
-    PDFProcessor proc;
+    PDFProcessor proc(logger);
     ASSERT_TRUE(proc.open(inPath));
 
-    ImageProvider *img = new ImageProvider(imgPath);
+    ImageProvider *img = new ImageProvider(imgPath, logger);
     proc.addImage(img, 0.5f, 10.0f, 10.0f, "https://example.com");
 
     proc.save(outPath);
@@ -201,7 +201,7 @@ TEST(PDFProcessorTest, AddExtraTextNoFontCollision) {
     createPDFWithFonts(setupPath, {{"/F2", "Times-Roman"}, {"/F3", "Courier"}});
 
     {
-        PDFProcessor proc;
+        PDFProcessor proc(logger);
         ASSERT_TRUE(proc.open(setupPath));
         proc.addExtraText("Hello", 100, 100, 12, "Helvetica", "");
         proc.save(outPath);
@@ -243,7 +243,7 @@ TEST(PDFProcessorTest, AddExtraTextExistingFontReused) {
     createPDFWithFonts(setupPath, {{"/F1", "Helvetica"}});
 
     {
-        PDFProcessor proc;
+        PDFProcessor proc(logger);
         ASSERT_TRUE(proc.open(setupPath));
         // Adding the same basefont should reuse /F1, not create /F2
         proc.addExtraText("World", 200, 200, 14, "Helvetica", "");
@@ -310,7 +310,7 @@ TEST(PDFProcessorTest, AddExtraTextMultipleNewFonts) {
     createPDFWithFonts(setupPath, {});
 
     {
-        PDFProcessor proc;
+        PDFProcessor proc(logger);
         ASSERT_TRUE(proc.open(setupPath));
         proc.addExtraText("First", 10, 10, 10, "Helvetica", "");
         proc.addExtraText("Second", 20, 20, 10, "Times-Roman", "");
@@ -363,7 +363,7 @@ TEST(PDFProcessorTest, AddExtraTextNoFontCollisionWithExisting) {
                        {{"/F1", "Helvetica"}, {"/F2", "Courier"}});
 
     {
-        PDFProcessor proc;
+        PDFProcessor proc(logger);
         ASSERT_TRUE(proc.open(setupPath));
         proc.addExtraText("New", 50, 50, 10, "Times-Roman", "");
         proc.save(outPath);

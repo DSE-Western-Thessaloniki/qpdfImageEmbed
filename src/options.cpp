@@ -3,12 +3,13 @@
 #include <boost/program_options.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <iostream>
+#include <stdexcept>
 
 using namespace boost::program_options;
 
 std::unordered_map<std::string, std::variant<std::string, int, float,
                                              std::vector<std::string>>>
-readCLIOptions(int argc, char *argv[]) {
+readCLIOptions(int argc, char *argv[], Logger &logger) {
     std::string inputPDF, outputPDF, imageFile, qrText;
     std::unordered_map<std::string, std::variant<std::string, int, float,
                                                  std::vector<std::string>>>
@@ -73,12 +74,13 @@ readCLIOptions(int argc, char *argv[]) {
               vm);
         notify(vm);
     } catch (error &e) {
-        if (!vm.count("help")) {
-            std::cerr << e.what() << std::endl << std::endl;
+        if (vm.count("help")) {
+            std::cout << programOptions << std::endl;
+            return cliOption;
         }
 
-        std::cout << programOptions << std::endl;
-        exit(1);
+        std::cerr << e.what() << std::endl << std::endl;
+        throw std::runtime_error("Invalid command-line arguments");
     }
 
     if (vm.count("input-file")) {
@@ -97,9 +99,8 @@ readCLIOptions(int argc, char *argv[]) {
 
     if (vm.count("img-x") || vm.count("img-y")) {
         if (!(vm.count("img-x") && vm.count("img-y"))) {
-            std::cerr << "Both img-x and img-y are necessary for placement."
-                      << std::endl;
-            exit(2);
+            throw std::runtime_error(
+                "Both img-x and img-y are necessary for placement.");
         }
 
         cliOption["img-x"] = vm["img-x"].as<float>();
@@ -111,10 +112,9 @@ readCLIOptions(int argc, char *argv[]) {
         int side;
 
         if (imgPosAbsolute) {
-            std::cerr << "You cannot use options from both absolute and "
-                         "relative placement!"
-                      << std::endl;
-            exit(2);
+            throw std::runtime_error(
+                "You cannot use options from both absolute and "
+                "relative placement!");
         }
 
         side = vm["img-side"].as<int>();
@@ -123,10 +123,9 @@ readCLIOptions(int argc, char *argv[]) {
         }
 
         if (invalid_value) {
-            std::cerr << "Wrong value for option --side. Valid options are "
-                         "0, 1, 2."
-                      << std::endl;
-            exit(2);
+            throw std::runtime_error(
+                "Wrong value for option --side. Valid options are "
+                "0, 1, 2.");
         }
 
         cliOption["img-side"] = side;
@@ -141,10 +140,9 @@ readCLIOptions(int argc, char *argv[]) {
         }
 
         if (invalid_value) {
-            std::cerr << "Wrong value for option --side. Valid options are "
-                         "0, 1, 2."
-                      << std::endl;
-            exit(2);
+            throw std::runtime_error(
+                "Wrong value for option --side. Valid options are "
+                "0, 1, 2.");
         }
 
         cliOption["qr-side"] = side;
@@ -161,9 +159,8 @@ readCLIOptions(int argc, char *argv[]) {
         }
 
         if (invalid_value) {
-            std::cerr << "Valid rotate values are 0, 90, 180 or 270 only."
-                      << std::endl;
-            exit(2);
+            throw std::runtime_error(
+                "Valid rotate values are 0, 90, 180 or 270 only.");
         }
 
         cliOption["rotate"] = assumeRotate;
@@ -186,10 +183,9 @@ readCLIOptions(int argc, char *argv[]) {
     }
 
     if (invalid_value) {
-        std::cerr << "Bad value for option img-scale. Valid options are real "
-                     "values >0"
-                  << std::endl;
-        exit(2);
+        throw std::runtime_error(
+            "Bad value for option img-scale. Valid options are real "
+            "values >0");
     }
 
     cliOption["img-scale"] = img_scale;
@@ -201,20 +197,17 @@ readCLIOptions(int argc, char *argv[]) {
     }
 
     if (invalid_value) {
-        std::cerr
-            << "Bad value for option qr-scale. Valid options are real values >0"
-            << std::endl;
-        exit(2);
+        throw std::runtime_error(
+            "Bad value for option qr-scale. Valid options are real values >0");
     }
 
     cliOption["qr-scale"] = qr_scale;
 
     if ((vm.count("img-top-margin") || vm.count("img-side-margin")) &&
         imgPosAbsolute) {
-        std::cerr << "You cannot use options from both absolute and "
-                     "relative placement!"
-                  << std::endl;
-        exit(2);
+        throw std::runtime_error(
+            "You cannot use options from both absolute and "
+            "relative placement!");
     }
 
     if (vm.count("img-top-margin")) {
@@ -243,11 +236,14 @@ readCLIOptions(int argc, char *argv[]) {
         logger.setEnabled(true);
     }
 
-    if ((!cliOption.contains("qrText") && !cliOption.contains("imageFile") &&
-         std::get<std::vector<std::string>>(cliOption["text"]).empty()) ||
-        vm.empty() || vm.count("help")) {
+    if (vm.count("help")) {
         std::cout << programOptions << std::endl;
-        exit(1);
+        return cliOption;
+    }
+
+    if (!cliOption.contains("qrText") && !cliOption.contains("imageFile") &&
+        std::get<std::vector<std::string>>(cliOption["text"]).empty()) {
+        throw std::runtime_error("No content options specified");
     }
 
     return cliOption;

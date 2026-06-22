@@ -5,7 +5,7 @@
 Logger logger;
 
 TEST(ExtraTextTest, PlainTextOnly) {
-    ExtraText et("Hello");
+    ExtraText et("Hello", logger);
     EXPECT_EQ(et.text(), "Hello");
     EXPECT_FLOAT_EQ(et.x(), 0);
     EXPECT_FLOAT_EQ(et.y(), 0);
@@ -14,7 +14,7 @@ TEST(ExtraTextTest, PlainTextOnly) {
 }
 
 TEST(ExtraTextTest, WithPosition) {
-    ExtraText et("100,200:Hello");
+    ExtraText et("100,200:Hello", logger);
     EXPECT_EQ(et.text(), "Hello");
     EXPECT_FLOAT_EQ(et.x(), 100);
     EXPECT_FLOAT_EQ(et.y(), 200);
@@ -23,7 +23,7 @@ TEST(ExtraTextTest, WithPosition) {
 }
 
 TEST(ExtraTextTest, WithSize) {
-    ExtraText et("24:World");
+    ExtraText et("24:World", logger);
     EXPECT_EQ(et.text(), "World");
     EXPECT_FLOAT_EQ(et.x(), 0);
     EXPECT_FLOAT_EQ(et.y(), 0);
@@ -32,7 +32,7 @@ TEST(ExtraTextTest, WithSize) {
 }
 
 TEST(ExtraTextTest, WithStyleBold) {
-    ExtraText et("b:Greetings");
+    ExtraText et("b:Greetings", logger);
     EXPECT_EQ(et.text(), "Greetings");
     EXPECT_FLOAT_EQ(et.x(), 0);
     EXPECT_FLOAT_EQ(et.y(), 0);
@@ -41,25 +41,25 @@ TEST(ExtraTextTest, WithStyleBold) {
 }
 
 TEST(ExtraTextTest, WithStyleItalic) {
-    ExtraText et("i:ItalicText");
+    ExtraText et("i:ItalicText", logger);
     EXPECT_EQ(et.text(), "ItalicText");
     EXPECT_EQ(et.style(), "Oblique");
 }
 
 TEST(ExtraTextTest, WithStyleBoldItalic) {
-    ExtraText et("bi:BoldItalic");
+    ExtraText et("bi:BoldItalic", logger);
     EXPECT_EQ(et.text(), "BoldItalic");
     EXPECT_EQ(et.style(), "BoldOblique");
 }
 
 TEST(ExtraTextTest, WithStyleItalicBold) {
-    ExtraText et("ib:ItalicBold");
+    ExtraText et("ib:ItalicBold", logger);
     EXPECT_EQ(et.text(), "ItalicBold");
     EXPECT_EQ(et.style(), "BoldOblique");
 }
 
 TEST(ExtraTextTest, FullFormat) {
-    ExtraText et("100,200:24:b:Hello World");
+    ExtraText et("100,200:24:b:Hello World", logger);
     EXPECT_EQ(et.text(), "Hello World");
     EXPECT_FLOAT_EQ(et.x(), 100);
     EXPECT_FLOAT_EQ(et.y(), 200);
@@ -68,7 +68,7 @@ TEST(ExtraTextTest, FullFormat) {
 }
 
 TEST(ExtraTextTest, PositionAndSize) {
-    ExtraText et("50,75:12:SomeText");
+    ExtraText et("50,75:12:SomeText", logger);
     EXPECT_EQ(et.text(), "SomeText");
     EXPECT_FLOAT_EQ(et.x(), 50);
     EXPECT_FLOAT_EQ(et.y(), 75);
@@ -77,7 +77,7 @@ TEST(ExtraTextTest, PositionAndSize) {
 }
 
 TEST(ExtraTextTest, PositionAndStyle) {
-    ExtraText et("10,20:i:StyledText");
+    ExtraText et("10,20:i:StyledText", logger);
     EXPECT_EQ(et.text(), "StyledText");
     EXPECT_FLOAT_EQ(et.x(), 10);
     EXPECT_FLOAT_EQ(et.y(), 20);
@@ -86,7 +86,7 @@ TEST(ExtraTextTest, PositionAndStyle) {
 }
 
 TEST(ExtraTextTest, SizeAndStyle) {
-    ExtraText et("36:bi:BigBoldItalic");
+    ExtraText et("36:bi:BigBoldItalic", logger);
     EXPECT_EQ(et.text(), "BigBoldItalic");
     EXPECT_FLOAT_EQ(et.x(), 0);
     EXPECT_FLOAT_EQ(et.y(), 0);
@@ -95,19 +95,19 @@ TEST(ExtraTextTest, SizeAndStyle) {
 }
 
 TEST(ExtraTextTest, PositionWithDecimal) {
-    ExtraText et("100.5,200.75:Hello");
+    ExtraText et("100.5,200.75:Hello", logger);
     EXPECT_EQ(et.text(), "Hello");
     EXPECT_FLOAT_EQ(et.x(), 100.5f);
     EXPECT_FLOAT_EQ(et.y(), 200.75f);
 }
 
 TEST(ExtraTextTest, TextWithColon) {
-    ExtraText et("Hello:World");
+    ExtraText et("Hello:World", logger);
     EXPECT_EQ(et.text(), "World");
 }
 
 TEST(ExtraTextTest, EmptyText) {
-    ExtraText et("");
+    ExtraText et("", logger);
     EXPECT_EQ(et.text(), "");
     EXPECT_FLOAT_EQ(et.x(), 0);
     EXPECT_FLOAT_EQ(et.y(), 0);

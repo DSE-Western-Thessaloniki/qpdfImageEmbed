@@ -4,29 +4,29 @@
 #include <qpdf/QPDFMatrix.hh>
 #include <qpdf/QPDFObjectHandle.hh>
 #include <random>
+#include <stdexcept>
 
-PDFProcessor::PDFProcessor(/* args */) {}
+PDFProcessor::PDFProcessor(Logger& logger) : m_logger(logger) {}
 
 PDFProcessor::~PDFProcessor() {}
 
-bool PDFProcessor::open(const std::string filename) {
+bool PDFProcessor::open(const std::string& filename) {
     try {
         m_pdf.processFile(filename.c_str());
     } catch (std::runtime_error &e) {
-        std::cerr << "Caught exception: " << e.what() << std::endl;
-        std::cerr << "Does " << filename << " exist?" << std::endl;
-        exit(4);
+        throw std::runtime_error(std::string("Cannot open PDF '") +
+                                 filename + "': " + e.what());
     }
-    logger << "PDF version: " << m_pdf.getPDFVersion() << "\n";
+    m_logger << "PDF version: " << m_pdf.getPDFVersion() << "\n";
 
     std::vector<QPDFObjectHandle> pages;
     pages = m_pdf.getAllPages();
-    logger << "Pages: " << pages.size() << "\n";
+    m_logger << "Pages: " << pages.size() << "\n";
 
     m_firstPage = pages.at(0);
 
-    logger << "Has Contents: " << m_firstPage.hasKey("/Contents") << "\n";
-    logger << "Has MediaBox: " << m_firstPage.hasKey("/MediaBox") << "\n";
+    m_logger << "Has Contents: " << m_firstPage.hasKey("/Contents") << "\n";
+    m_logger << "Has MediaBox: " << m_firstPage.hasKey("/MediaBox") << "\n";
 
     if (!m_firstPage.hasKey(
             "/MediaBox")) { // No MediaBox? Use default values for letter size
@@ -43,33 +43,33 @@ bool PDFProcessor::open(const std::string filename) {
                              m_mediabox.getArrayItem(2).getNumericValue(),
                              m_mediabox.getArrayItem(3).getNumericValue());
     }
-    logger << "--> MediaBox: ";
+    m_logger << "--> MediaBox: ";
     for (int i = 0; i < m_mediabox.getArrayNItems(); i++) {
-        logger << m_mediabox.getArrayItem(i).getNumericValue() << " ";
+        m_logger << m_mediabox.getArrayItem(i).getNumericValue() << " ";
     }
-    logger << "\nHas CropBox: " << m_firstPage.hasKey("/CropBox") << "\n";
+    m_logger << "\nHas CropBox: " << m_firstPage.hasKey("/CropBox") << "\n";
     if (m_firstPage.hasKey("/CropBox")) {
         QPDFObjectHandle cropbox = m_firstPage.getKey("/CropBox");
-        logger << "--> CropBox: ";
+        m_logger << "--> CropBox: ";
         for (int i = 0; i < cropbox.getArrayNItems(); i++) {
-            logger << cropbox.getArrayItem(i).getNumericValue() << " ";
+            m_logger << cropbox.getArrayItem(i).getNumericValue() << " ";
         }
         m_pageRect.setCoords(cropbox.getArrayItem(0).getNumericValue(),
                              cropbox.getArrayItem(1).getNumericValue(),
                              cropbox.getArrayItem(2).getNumericValue(),
                              cropbox.getArrayItem(3).getNumericValue());
     }
-    logger << "\nHas Rotate: " << m_firstPage.hasKey("/Rotate") << "\n";
+    m_logger << "\nHas Rotate: " << m_firstPage.hasKey("/Rotate") << "\n";
     if (m_firstPage.hasKey("/Rotate")) {
         QPDFObjectHandle rotateObj = m_firstPage.getKey("/Rotate");
         m_rotate = rotateObj.getNumericValue();
-        logger << "--> Rotate: " << m_rotate << "\n";
+        m_logger << "--> Rotate: " << m_rotate << "\n";
     }
 
-    logger << "Has Resources: " << m_firstPage.hasKey("/Resources") << "\n";
+    m_logger << "Has Resources: " << m_firstPage.hasKey("/Resources") << "\n";
 
     QPDFObjectHandle resources = m_firstPage.getKey("/Resources");
-    logger << "Has Resources->XObject: " << resources.hasKey("/XObject")
+    m_logger << "Has Resources->XObject: " << resources.hasKey("/XObject")
            << "\n";
 
     if (!resources.hasKey("/XObject")) {
@@ -88,7 +88,7 @@ void PDFProcessor::rotate(int degrees) {
 
 void PDFProcessor::setPosition(int side) {
     m_side = side;
-    logger << "Side: " << side << "\n";
+    m_logger << "Side: " << side << "\n";
 }
 
 std::string PDFProcessor::rand_str(int length) {
@@ -110,7 +110,7 @@ std::string PDFProcessor::rand_str(int length) {
     return output;
 }
 
-std::string PDFProcessor::createNewImageName(std::string prefix) {
+std::string PDFProcessor::createNewImageName(const std::string& prefix) {
     std::string newName;
     bool nameFound = true;
 
@@ -125,7 +125,7 @@ std::string PDFProcessor::createNewImageName(std::string prefix) {
     return newName;
 }
 
-void PDFProcessor::createImageStream(ImageProvider *p, std::string name) {
+void PDFProcessor::createImageStream(ImageProvider *p, const std::string& name) {
     // Image object
     QPDFObjectHandle image = QPDFObjectHandle::newStream(&m_pdf);
     std::string imageString = std::string("<<"
@@ -136,7 +136,7 @@ void PDFProcessor::createImageStream(ImageProvider *p, std::string name) {
                                           " /Width ") +
                               std::to_string(p->getWidth()) + " /Height " +
                               std::to_string(p->getHeight()) + ">>";
-    logger << "Image string: " << imageString << "\n";
+    m_logger << "Image string: " << imageString << "\n";
     image.replaceDict(QPDFObjectHandle::parse(imageString));
     // Provide the stream data.
     std::shared_ptr<QPDFObjectHandle::StreamDataProvider> provider(p);
@@ -156,11 +156,11 @@ void PDFProcessor::createImageStream(ImageProvider *p, std::string name) {
                                           std::to_string(p->getWidth()) +
                                           " /Height " +
                                           std::to_string(p->getHeight()) + ">>";
-    logger << "Transparency image string: " << transparencyImageString << "\n";
+    m_logger << "Transparency image string: " << transparencyImageString << "\n";
     transparency.replaceDict(QPDFObjectHandle::parse(transparencyImageString));
     // Provide the stream data.
     auto transparencyProvider = p->getAlpha();
-    logger << "Buffer size: " << transparencyProvider.get()->getSize() << "\n";
+    m_logger << "Buffer size: " << transparencyProvider.get()->getSize() << "\n";
     transparency.replaceStreamData(transparencyProvider,
                                    QPDFObjectHandle::newNull(),
                                    QPDFObjectHandle::newNull());
@@ -173,7 +173,7 @@ void PDFProcessor::createImageStream(ImageProvider *p, std::string name) {
 }
 
 void PDFProcessor::addImage(ImageProvider *p, float scale, float topMargin,
-                            float sideMargin, std::string link,
+                            float sideMargin, const std::string& link,
                             Point *exactPosition) {
 
     std::string imageName = createNewImageName("ImEPStampR");
@@ -245,8 +245,8 @@ void PDFProcessor::addImage(ImageProvider *p, float scale, float topMargin,
     imgTransformation.scale(scale * imgWidth, scale * imgHeight);
     streamString += imgTransformation.unparse() + " cm ";
 
-    logger << "pageHeight: " << pageHeight << "\n";
-    logger << "pageWidth: " << pageWidth << "\n";
+    m_logger << "pageHeight: " << pageHeight << "\n";
+    m_logger << "pageWidth: " << pageWidth << "\n";
 
     // Check if we have a link annotation
     if (link.empty()) {
@@ -286,7 +286,7 @@ void PDFProcessor::addImage(ImageProvider *p, float scale, float topMargin,
         newAnnotation.replaceKey("/Subtype",
                                  QPDFObjectHandle::newName("/Link"));
 
-        logger << "Rect: " << x1 << " " << y1 << " " << x2 << " " << y2 << "\n";
+        m_logger << "Rect: " << x1 << " " << y1 << " " << x2 << " " << y2 << "\n";
         newAnnotation.replaceKey(
             "/Rect", QPDFObjectHandle::newFromRectangle(
                          QPDFObjectHandle::Rectangle(x1, y1, x2, y2)));
@@ -298,25 +298,25 @@ void PDFProcessor::addImage(ImageProvider *p, float scale, float topMargin,
         newAnnotation.replaceKey("/A", anchor);
 
         if (annots.isArray()) {
-            logger << "Appending to annots array\n";
+            m_logger << "Appending to annots array\n";
             annots.appendItem(newAnnotation);
         } else {
-            logger << "Adding annots array\n";
+            m_logger << "Adding annots array\n";
             QPDFObjectHandle newAnnots = QPDFObjectHandle::newArray();
             newAnnots.appendItem(newAnnotation);
             m_firstPage.replaceKey("/Annots", newAnnots);
         }
     }
 
-    logger << "Stream str: " << saveState + streamString << "\n";
+    m_logger << "Stream str: " << saveState + streamString << "\n";
 
     m_firstPage.addPageContents(
         QPDFObjectHandle::newStream(&m_pdf, saveState + streamString), false);
 }
 
-void PDFProcessor::addExtraText(std::string text, float x, float y,
-                                float font_size, std::string basefont,
-                                std::string style) {
+void PDFProcessor::addExtraText(const std::string& text, float x, float y,
+                                float font_size, const std::string& basefont,
+                                const std::string& style) {
     const std::string basefont_full_name =
         basefont + (style == "" ? "" : "-" + style);
     // Create a new font dictionary
@@ -393,17 +393,15 @@ void PDFProcessor::addExtraText(std::string text, float x, float y,
                         text + ") Tj ET"),
         false);
 
-    logger << "Adding text...\n";
+    m_logger << "Adding text...\n";
 }
 
-void PDFProcessor::save(const std::string filename) {
+void PDFProcessor::save(const std::string& filename) {
     try {
         QPDFWriter w(m_pdf, filename.c_str());
         w.write();
     } catch (std::runtime_error &e) {
-        std::cerr << "Caught exception: " << e.what() << std::endl;
-        std::cerr << "Cannot create output file '" << filename << "'"
-                  << std::endl;
-        exit(5);
+        throw std::runtime_error(std::string("Cannot save PDF '") +
+                                 filename + "': " + e.what());
     }
 }

@@ -10,6 +10,6 @@ Point::Point(float x, float y) {
     m_y = y;
 }
 
-float Point::x() { return m_x; }
+float Point::x() const { return m_x; }
 
-float Point::y() { return m_y; }
+float Point::y() const { return m_y; }

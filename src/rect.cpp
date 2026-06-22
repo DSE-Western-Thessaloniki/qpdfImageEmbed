@@ -5,9 +5,9 @@ Rect::Rect() { x1 = x2 = y1 = y2 = 0; }
 
 Rect::~Rect() {}
 
-double Rect::height() { return std::fabs(y2 - y1); }
+double Rect::height() const { return std::fabs(y2 - y1); }
 
-double Rect::width() { return std::fabs(x2 - x1); }
+double Rect::width() const { return std::fabs(x2 - x1); }
 
 void Rect::setCoords(double x1, double y1, double x2, double y2) {
     this->x1 = x1;
@@ -16,7 +16,7 @@ void Rect::setCoords(double x1, double y1, double x2, double y2) {
     this->y2 = y2;
 }
 
-double Rect::x() {
+double Rect::x() const {
     if (x1 < x2) {
         return x1;
     }
@@ -24,7 +24,7 @@ double Rect::x() {
     return x2;
 }
 
-double Rect::y() {
+double Rect::y() const {
     if (y1 < y2) {
         return y1;
     }

@@ -2,7 +2,7 @@
 
 Logger::Logger() { out = &std::cerr; }
 
-Logger::Logger(std::string fileName) { open(fileName); }
+Logger::Logger(const std::string& fileName) { open(fileName); }
 
 void Logger::write(const std::string &value) {
     std::string text = value;
@@ -25,7 +25,7 @@ void Logger::setShowDateTime(bool value) { m_showDate = value; }
 
 void Logger::setEnabled(bool value) { m_enabled = value; }
 
-void Logger::open(std::string fileName) {
+void Logger::open(const std::string& fileName) {
     if (!fileName.empty()) {
 
         file = new std::ofstream(fileName, std::ios_base::openmode::_S_ate);
@@ -35,7 +35,7 @@ void Logger::open(std::string fileName) {
     }
 }
 
-Logger &Logger::operator<<(const std::string text) {
+Logger &Logger::operator<<(const std::string& text) {
     if (m_enabled)
         *out << text;
     return *this;
@@ -71,7 +71,7 @@ Logger &Logger::operator<<(const bool value) {
     return *this;
 }
 
-bool Logger::enabled(void) { return m_enabled; }
+bool Logger::enabled(void) const { return m_enabled; }
 
 void Logger::close(void) {
     out->flush();

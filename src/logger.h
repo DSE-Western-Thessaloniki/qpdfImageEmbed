@@ -9,15 +9,15 @@
 class Logger {
     public:
         Logger();
-        Logger(std::string fileName);
+        explicit Logger(const std::string& fileName);
         ~Logger();
 
         void setShowDateTime(bool value);
         void setEnabled(bool value);
-        bool enabled(void);
+        bool enabled(void) const;
         void close(void);
-        void open(std::string fileName);
-        Logger &operator<<(const std::string text);
+        void open(const std::string& fileName);
+        Logger &operator<<(const std::string& text);
         Logger &operator<<(const char *text);
         Logger &operator<<(const int value);
         Logger &operator<<(const bool value);
@@ -32,7 +32,5 @@ class Logger {
 
         void write(const std::string &value);
 };
-
-extern Logger logger;
 
 #endif // LOGGER_H

@@ -9,10 +9,10 @@ class Rect {
         Rect();
         ~Rect();
         void setCoords(double x1, double y1, double x2, double y2);
-        double height();
-        double width();
-        double x();
-        double y();
+        double height() const;
+        double width() const;
+        double x() const;
+        double y() const;
 };
 
 #endif // RECT_H
