@@ -2,4 +2,5 @@
 // clang-format off
 #define qpdfImageEmbed_VERSION_MAJOR @qpdfImageEmbed_VERSION_MAJOR@
 #define qpdfImageEmbed_VERSION_MINOR @qpdfImageEmbed_VERSION_MINOR@
+#define qpdfImageEmbed_VERSION_PATCH @qpdfImageEmbed_VERSION_PATCH@
 // clang-format on

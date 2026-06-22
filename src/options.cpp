@@ -21,6 +21,7 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
     // clang-format off
     generic.add_options()
         ("help,h", "Produce this help message")
+        ("version", "Print version string")
         ("input-file,i", value<std::string>()->required(), "Input file")
         ("output-file,o", value<std::string>()->required(), "Output file")
         ("rotate", value<int>()->default_value(0), "Assume page is rotated by 0/90/180/270 degrees")
@@ -79,8 +80,18 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
             return cliOption;
         }
 
+        if (vm.count("version")) {
+            cliOption["version"] = 1;
+            return cliOption;
+        }
+
         std::cerr << e.what() << std::endl << std::endl;
         throw std::runtime_error("Invalid command-line arguments");
+    }
+
+    if (vm.count("version")) {
+        cliOption["version"] = 1;
+        return cliOption;
     }
 
     if (vm.count("input-file")) {

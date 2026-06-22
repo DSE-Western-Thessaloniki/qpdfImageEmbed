@@ -26,6 +26,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    if (cliOption.contains("version")) {
+        std::cout << "qpdfImageEmbed v" << qpdfImageEmbed_VERSION_MAJOR << "."
+                  << qpdfImageEmbed_VERSION_MINOR << "."
+                  << qpdfImageEmbed_VERSION_PATCH << std::endl;
+        return 0;
+    }
+
     if (!cliOption.contains("inputPDF")) {
         return 0;
     }

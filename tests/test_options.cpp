@@ -23,6 +23,15 @@ TEST(OptionsTest, HelpFlag) {
     EXPECT_TRUE(opts.empty());
 }
 
+TEST(OptionsTest, VersionFlag) {
+    int argc = 2;
+    const char *argv[] = {"qpdfImageEmbed", "--version", nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
+    EXPECT_TRUE(opts.contains("version"));
+    EXPECT_EQ(std::get<int>(opts["version"]), 1);
+    EXPECT_FALSE(opts.contains("inputPDF"));
+}
+
 TEST(OptionsInvalidTest, MissingContentOptions) {
     int argc = 5;
     const char *argv[] = {"qpdfImageEmbed", "-i",   "in.pdf", "-o",

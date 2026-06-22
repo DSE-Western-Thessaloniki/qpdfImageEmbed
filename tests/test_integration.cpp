@@ -458,6 +458,20 @@ TEST_F(CLITest, EmbedImageFromStdin) {
     EXPECT_TRUE(f.good());
 }
 
+TEST_F(CLITest, VersionFlag) {
+    std::string cmd = binaryPath + " --version 2>/dev/null";
+    FILE *pipe = popen(cmd.c_str(), "r");
+    ASSERT_NE(pipe, nullptr);
+    std::string output;
+    char buf[128];
+    while (fgets(buf, sizeof(buf), pipe)) {
+        output += buf;
+    }
+    int ret = pclose(pipe);
+    EXPECT_EQ(ret, 0);
+    EXPECT_NE(output.find("qpdfImageEmbed v"), std::string::npos);
+}
+
 TEST_F(CLITest, EmbedQRSuccess) {
     std::vector<std::string> args = {
         "-i", inPath, "-o", outPath, "--qr", "test-data",
