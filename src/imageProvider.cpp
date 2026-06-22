@@ -1,6 +1,8 @@
 #include "imageProvider.h"
 #include "logger.h"
+#include <iterator>
 #include <stdexcept>
+#include <vector>
 
 using namespace MagickCore;
 
@@ -14,6 +16,23 @@ ImageProvider::ImageProvider(const std::string &filename, Logger &logger)
     } catch (Magick::Exception &e) {
         throw std::runtime_error(std::string("Cannot read image '") + filename +
                                  "': " + e.what());
+    }
+    processImage();
+}
+
+ImageProvider::ImageProvider(std::istream &stream, Logger &logger)
+    : m_logger(logger) {
+    std::vector<char> buffer((std::istreambuf_iterator<char>(stream)),
+                              std::istreambuf_iterator<char>());
+    if (buffer.empty()) {
+        throw std::runtime_error("Cannot read image from stdin: no data");
+    }
+    Magick::Blob blob(buffer.data(), buffer.size());
+    try {
+        img.read(blob);
+    } catch (Magick::Exception &e) {
+        throw std::runtime_error(std::string("Cannot read image from stdin: ") +
+                                 e.what());
     }
     processImage();
 }
@@ -54,9 +73,8 @@ ImageProvider::~ImageProvider() {
 
 void ImageProvider::provideStreamData(int objid, int generation,
                                       Pipeline *pipeline) {
-    // If we have an empty image
-    if (filename.empty() && qr == nullptr) {
-        // Paint an orange rectangle
+    if (rgbData == nullptr) {
+        // Paint an orange rectangle (empty placeholder)
         for (int i = 0; i < width * height; ++i) {
             pipeline->write(QUtil::unsigned_char_pointer("\xff\x7f\x00"), 3);
         }

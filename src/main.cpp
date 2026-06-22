@@ -80,19 +80,24 @@ int main(int argc, char *argv[]) {
     pdf_processor.setPosition(img_side);
 
     if (cliOption.contains("imageFile")) {
+        const std::string &imageFile =
+            std::get<std::string>(cliOption["imageFile"]);
+        ImageProvider *imgProvider;
+        if (imageFile == "-") {
+            imgProvider = new ImageProvider(std::cin, logger);
+        } else {
+            imgProvider = new ImageProvider(imageFile, logger);
+        }
+
         if (cliOption.contains("img-x")) {
             Point p(std::get<float>(cliOption["img-x"]),
                     std::get<float>(cliOption["img-y"]));
             pdf_processor.addImage(
-                new ImageProvider(
-                    std::get<std::string>(cliOption["imageFile"]), logger),
-                std::get<float>(cliOption["img-scale"]), 0, 0,
+                imgProvider, std::get<float>(cliOption["img-scale"]), 0, 0,
                 std::get<std::string>(cliOption["img-link-to"]), &p);
         } else {
             pdf_processor.addImage(
-                new ImageProvider(
-                    std::get<std::string>(cliOption["imageFile"]), logger),
-                std::get<float>(cliOption["img-scale"]),
+                imgProvider, std::get<float>(cliOption["img-scale"]),
                 std::get<float>(cliOption["img-top-margin"]),
                 std::get<float>(cliOption["img-side-margin"]),
                 std::get<std::string>(cliOption["img-link-to"]));

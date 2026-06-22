@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <sstream>
 #include <string>
 
 #include "../src/imageProvider.h"
@@ -41,6 +42,19 @@ TEST(ImageProviderTest, LoadFromPPM) {
     EXPECT_EQ(img->getWidth(), 100);
     EXPECT_EQ(img->getHeight(), 100);
     delete img;
+}
+
+TEST(ImageProviderTest, LoadFromStdin) {
+    std::string path = std::string(TEST_DATA_DIR) + "/test_image.ppm";
+    std::ifstream file(path, std::ios::binary);
+    ASSERT_TRUE(file.good());
+    std::stringstream ss;
+    ss << file.rdbuf();
+    file.close();
+
+    ImageProvider img(ss, logger);
+    EXPECT_EQ(img.getWidth(), 100);
+    EXPECT_EQ(img.getHeight(), 100);
 }
 
 TEST(ImageProviderTest, CreateFromQR) {
@@ -431,6 +445,15 @@ TEST_F(CLITest, EmbedImageSuccess) {
     int ret = runBinary(args);
     EXPECT_EQ(ret, 0);
 
+    std::ifstream f(outPath);
+    EXPECT_TRUE(f.good());
+}
+
+TEST_F(CLITest, EmbedImageFromStdin) {
+    std::string cmd = binaryPath + " -i " + inPath + " -o " + outPath +
+                      " --stamp - < " + imgPath + " 2>/dev/null";
+    int ret = system(cmd.c_str());
+    EXPECT_EQ(ret, 0);
     std::ifstream f(outPath);
     EXPECT_TRUE(f.good());
 }

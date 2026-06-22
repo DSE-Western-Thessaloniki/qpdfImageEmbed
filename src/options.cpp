@@ -28,7 +28,7 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
 
     options_description imgOptions("Image");
     imgOptions.add_options()
-        ("stamp,s", value<std::string>(), "Image to embed")
+        ("stamp,s", value<std::string>(), "Image to embed (- for stdin)")
         ("img-scale", value<float>()->default_value(1),"Scale image by a factor eg. 0.5")
         ("img-link-to", value<std::string>()->default_value(""), "Image will be clickable linking to the url passed as argument");
 

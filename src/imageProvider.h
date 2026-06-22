@@ -3,6 +3,7 @@
 
 #include "logger.h"
 #include <Magick++/Image.h>
+#include <istream>
 #include <memory>
 #include <qpdf/Buffer.hh>
 #include <qpdf/QPDF.hh>
@@ -15,6 +16,7 @@ class ImageProvider : public QPDFObjectHandle::StreamDataProvider {
     public:
         ImageProvider(int width, int height, Logger& logger);
         ImageProvider(const std::string& filename, Logger& logger);
+        ImageProvider(std::istream& stream, Logger& logger);
         ImageProvider(const QRcode *qr, Logger& logger);
         virtual ~ImageProvider();
         virtual void provideStreamData(int objid, int generation,
@@ -31,7 +33,7 @@ class ImageProvider : public QPDFObjectHandle::StreamDataProvider {
         std::shared_ptr<Buffer> alphaBuf;
         unsigned char *alphaData = nullptr;
         unsigned char *rgbData = nullptr;
-        const QRcode *qr;
+        const QRcode *qr = nullptr;
         Logger& m_logger;
 
         void processImage();

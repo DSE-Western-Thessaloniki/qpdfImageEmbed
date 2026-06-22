@@ -45,7 +45,7 @@ Generic:
   --debug                     Print extra debug messages
 
 Image:
-  -s [ --stamp ] arg          Image to embed
+  -s [ --stamp ] arg          Image to embed (- for stdin)
   --img-scale arg (=1)        Scale image by a factor eg. 0.5
   --img-link-to arg           Image will be clickable linking to the url passed
                               as argument
