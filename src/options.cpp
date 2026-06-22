@@ -22,8 +22,10 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
     generic.add_options()
         ("help,h", "Produce this help message")
         ("version", "Print version string")
-        ("input-file,i", value<std::string>()->required(), "Input file")
-        ("output-file,o", value<std::string>()->required(), "Output file")
+        ("input-file,i", value<std::string>(), "Input file")
+        ("output-file,o", value<std::string>(), "Output file")
+        ("input-dir", value<std::string>(), "Input directory for batch processing")
+        ("output-dir", value<std::string>(), "Output directory for batch processing")
         ("rotate", value<int>()->default_value(0), "Assume page is rotated by 0/90/180/270 degrees")
         ("debug", "Print extra debug messages");
 
@@ -87,6 +89,11 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
 
         std::cerr << e.what() << std::endl << std::endl;
         throw std::runtime_error("Invalid command-line arguments");
+    }
+
+    if (vm.count("help")) {
+        std::cout << programOptions << std::endl;
+        return cliOption;
     }
 
     if (vm.count("version")) {
@@ -247,9 +254,25 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
         logger.setEnabled(true);
     }
 
-    if (vm.count("help")) {
-        std::cout << programOptions << std::endl;
-        return cliOption;
+    bool hasInputFile = vm.count("input-file") && vm.count("output-file");
+    bool hasInputDir  = vm.count("input-dir") && vm.count("output-dir");
+
+    if (!hasInputFile && !hasInputDir) {
+        throw std::runtime_error(
+            "Specify either --input-file/--output-file or --input-dir/--output-dir");
+    }
+
+    if (hasInputFile && hasInputDir) {
+        throw std::runtime_error(
+            "Cannot use both --input-file/--output-file and --input-dir/--output-dir");
+    }
+
+    if (vm.count("input-dir")) {
+        cliOption["inputDir"] = vm["input-dir"].as<std::string>();
+    }
+
+    if (vm.count("output-dir")) {
+        cliOption["outputDir"] = vm["output-dir"].as<std::string>();
     }
 
     if (!cliOption.contains("qrText") && !cliOption.contains("imageFile") &&

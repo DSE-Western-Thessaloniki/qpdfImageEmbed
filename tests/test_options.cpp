@@ -157,7 +157,75 @@ TEST(OptionsInvalidTest, MissingContentCaughtWithoutArgcCheck) {
     // This validates that the content check (not argc) is the real guard.
     int argc = 5;
     const char *argv[] = {"qpdfImageEmbed", "-i",   "in.pdf", "-o",
-                          "out.pdf",        nullptr};
+                           "out.pdf",        nullptr};
+    EXPECT_THROW(readCLIOptions(argc, const_cast<char **>(argv), logger),
+                 std::runtime_error);
+}
+
+// ============================================================
+// Batch mode option tests
+// ============================================================
+
+TEST(OptionsBatchTest, ValidInputDirWithQR) {
+    int argc = 7;
+    const char *argv[] = {"qpdfImageEmbed", "--input-dir", "/tmp/in",
+                          "--output-dir",   "/tmp/out",    "--qr",
+                          "test",           nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
+    EXPECT_EQ(std::get<std::string>(opts["inputDir"]), "/tmp/in");
+    EXPECT_EQ(std::get<std::string>(opts["outputDir"]), "/tmp/out");
+    EXPECT_EQ(std::get<std::string>(opts["qrText"]), "test");
+}
+
+TEST(OptionsBatchTest, ValidInputDirWithStamp) {
+    int argc = 7;
+    const char *argv[] = {"qpdfImageEmbed", "--input-dir", "/tmp/in",
+                          "--output-dir",   "/tmp/out",    "--stamp",
+                          "img.png",        nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
+    EXPECT_EQ(std::get<std::string>(opts["inputDir"]), "/tmp/in");
+    EXPECT_EQ(std::get<std::string>(opts["outputDir"]), "/tmp/out");
+    EXPECT_EQ(std::get<std::string>(opts["imageFile"]), "img.png");
+}
+
+TEST(OptionsInvalidTest, BatchModeMissingOutputDir) {
+    int argc = 5;
+    const char *argv[] = {"qpdfImageEmbed", "--input-dir", "/tmp/in",
+                          "--qr",           "test",        nullptr};
+    EXPECT_THROW(readCLIOptions(argc, const_cast<char **>(argv), logger),
+                 std::runtime_error);
+}
+
+TEST(OptionsInvalidTest, BatchModeMissingInputDir) {
+    int argc = 5;
+    const char *argv[] = {"qpdfImageEmbed", "--output-dir", "/tmp/out",
+                          "--qr",           "test",         nullptr};
+    EXPECT_THROW(readCLIOptions(argc, const_cast<char **>(argv), logger),
+                 std::runtime_error);
+}
+
+TEST(OptionsInvalidTest, BothSingleAndBatchMode) {
+    int argc = 11;
+    const char *argv[] = {"qpdfImageEmbed", "-i",           "in.pdf",
+                          "-o",             "out.pdf",      "--input-dir",
+                          "/tmp/in",        "--output-dir", "/tmp/out",
+                          "--qr",           "test",         nullptr};
+    EXPECT_THROW(readCLIOptions(argc, const_cast<char **>(argv), logger),
+                 std::runtime_error);
+}
+
+TEST(OptionsInvalidTest, BatchModeNoContent) {
+    int argc = 5;
+    const char *argv[] = {"qpdfImageEmbed", "--input-dir", "/tmp/in",
+                          "--output-dir",   "/tmp/out",    nullptr};
+    EXPECT_THROW(readCLIOptions(argc, const_cast<char **>(argv), logger),
+                 std::runtime_error);
+}
+
+TEST(OptionsInvalidTest, NeitherSingleNorBatchMode) {
+    int argc = 7;
+    const char *argv[] = {"qpdfImageEmbed", "--stamp", "img.png", "--qr",
+                          "test",           "--add-text", "hello", nullptr};
     EXPECT_THROW(readCLIOptions(argc, const_cast<char **>(argv), logger),
                  std::runtime_error);
 }
