@@ -8,9 +8,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
+
+namespace fs = std::filesystem;
 
 #include "../src/imageProvider.h"
 #include "../src/pdfProcessor.h"
@@ -505,6 +508,38 @@ TEST_F(CLITest, BadRotateValue) {
     };
     int ret = runBinary(args);
     EXPECT_NE(ret, 0);
+}
+
+TEST_F(CLITest, BatchProcessDirectory) {
+    std::string inDir = std::string(TEST_DATA_DIR) + "/_batch_in";
+    std::string outDir = std::string(TEST_DATA_DIR) + "/_batch_out";
+
+    fs::create_directories(inDir);
+    fs::create_directories(outDir);
+
+    // Copy blank.pdf multiple times into input dir
+    fs::copy(inPath, inDir + "/doc1.pdf", fs::copy_options::overwrite_existing);
+    fs::copy(inPath, inDir + "/doc2.pdf", fs::copy_options::overwrite_existing);
+    fs::copy(inPath, inDir + "/doc3.pdf", fs::copy_options::overwrite_existing);
+
+    std::vector<std::string> args = {
+        "--input-dir", inDir, "--output-dir", outDir, "--qr", "batch-test",
+    };
+    int ret = runBinary(args);
+    EXPECT_EQ(ret, 0);
+
+    EXPECT_TRUE(fs::exists(outDir + "/doc1.pdf"));
+    EXPECT_TRUE(fs::exists(outDir + "/doc2.pdf"));
+    EXPECT_TRUE(fs::exists(outDir + "/doc3.pdf"));
+
+    // Verify each output is a valid PDF
+    for (const auto &f : {"doc1.pdf", "doc2.pdf", "doc3.pdf"}) {
+        QPDF verify;
+        EXPECT_NO_THROW(verify.processFile((outDir + "/" + f).c_str()));
+    }
+
+    fs::remove_all(inDir);
+    fs::remove_all(outDir);
 }
 
 int main(int argc, char **argv) {
