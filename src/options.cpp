@@ -34,6 +34,7 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
     imgOptions.add_options()
         ("stamp,s", value<std::string>(), "Image to embed (- for stdin)")
         ("img-scale", value<float>()->default_value(1),"Scale image by a factor eg. 0.5")
+        ("img-opacity", value<float>()->default_value(1),"Set image/QR opacity (0.0 = transparent, 1.0 = opaque)")
         ("img-link-to", value<std::string>()->default_value(""), "Image will be clickable linking to the url passed as argument");
 
     options_description imgRelPlacement("Image relative placement");
@@ -270,6 +271,13 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
     cliOption["qr-top-margin"] = vm["qr-top-margin"].as<float>();
 
     cliOption["qr-side-margin"] = vm["qr-side-margin"].as<float>();
+
+    float imgOpacity = vm["img-opacity"].as<float>();
+    if (imgOpacity < 0.0f || imgOpacity > 1.0f) {
+        throw std::runtime_error(
+            "Invalid value for option img-opacity. Valid range: 0.0 - 1.0");
+    }
+    cliOption["img-opacity"] = imgOpacity;
 
     cliOption["text"] = vm.count("add-text")
                             ? vm["add-text"].as<std::vector<std::string>>()

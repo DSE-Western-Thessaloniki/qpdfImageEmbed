@@ -197,6 +197,25 @@ TEST(PDFProcessorTest, EmbedQRAndVerify) {
     std::remove(outPath.c_str());
 }
 
+TEST(PDFProcessorTest, EmbedImageWithOpacity) {
+    std::string inPath = std::string(TEST_DATA_DIR) + "/blank.pdf";
+    std::string imgPath = std::string(TEST_DATA_DIR) + "/test_image.ppm";
+    std::string outPath = std::string(TEST_DATA_DIR) + "/_test_opacity.pdf";
+
+    PDFProcessor proc(logger);
+    ASSERT_TRUE(proc.open(inPath));
+
+    ImageProvider *img = new ImageProvider(imgPath, logger);
+    proc.addImage(img, 0.5f, 10.0f, 10.0f, "", nullptr, 0.5f);
+
+    proc.save(outPath);
+
+    QPDF verify;
+    EXPECT_NO_THROW(verify.processFile(outPath.c_str()));
+
+    std::remove(outPath.c_str());
+}
+
 TEST(PDFProcessorTest, EmbedImageWithLink) {
     std::string inPath = std::string(TEST_DATA_DIR) + "/blank.pdf";
     std::string imgPath = std::string(TEST_DATA_DIR) + "/test_image.ppm";
@@ -559,6 +578,28 @@ TEST_F(CLITest, EmbedQRWithEccL) {
 TEST_F(CLITest, EmbedQRWithEccH) {
     std::vector<std::string> args = {
         "-i", inPath, "-o", outPath, "--qr", "ecc-H-data", "--qr-ecc", "H",
+    };
+    int ret = runBinary(args);
+    EXPECT_EQ(ret, 0);
+    std::ifstream f(outPath);
+    EXPECT_TRUE(f.good());
+}
+
+TEST_F(CLITest, EmbedQRWithOpacity) {
+    std::vector<std::string> args = {
+        "-i", inPath, "-o", outPath, "--qr", "faded-qr",
+        "--img-opacity", "0.5",
+    };
+    int ret = runBinary(args);
+    EXPECT_EQ(ret, 0);
+    std::ifstream f(outPath);
+    EXPECT_TRUE(f.good());
+}
+
+TEST_F(CLITest, EmbedImageWithOpacity) {
+    std::vector<std::string> args = {
+        "-i", inPath, "-o", outPath, "--stamp", imgPath,
+        "--img-opacity", "0.3",
     };
     int ret = runBinary(args);
     EXPECT_EQ(ret, 0);

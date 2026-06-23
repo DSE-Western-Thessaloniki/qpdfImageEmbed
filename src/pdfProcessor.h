@@ -21,7 +21,8 @@ class PDFProcessor {
 
         std::string rand_str(int length);
         std::string createNewImageName(const std::string& prefix);
-        void createImageStream(ImageProvider *p, const std::string& name);
+        void createImageStream(ImageProvider *p, const std::string& name,
+                               float opacity);
 
     public:
         PDFProcessor(Logger& logger);
@@ -32,7 +33,8 @@ class PDFProcessor {
         void setPosition(int side);
         void addImage(ImageProvider *p, float scale, float topMargin,
                       float sideMargin, const std::string& link = "",
-                      Point *exactPosition = nullptr);
+                      Point *exactPosition = nullptr,
+                      float opacity = 1.0f);
         void addExtraText(const std::string& text, float x, float y, float font_size,
                           const std::string& basefont, const std::string& style);
         void save(const std::string& filename);
