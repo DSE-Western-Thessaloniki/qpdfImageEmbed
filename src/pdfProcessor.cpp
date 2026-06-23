@@ -168,11 +168,11 @@ void PDFProcessor::createImageStream(ImageProvider *p, const std::string& name,
     if (opacity < 1.0f) {
         size_t size = alphaBuf->getSize();
         unsigned char *raw = alphaBuf->getBuffer();
-        unsigned char *scaled = new unsigned char[size];
+        auto scaledBuf = std::make_shared<Buffer>(size);
+        unsigned char *scaled = scaledBuf->getBuffer();
         for (size_t i = 0; i < size; i++) {
             scaled[i] = static_cast<unsigned char>(raw[i] * opacity);
         }
-        auto scaledBuf = std::make_shared<Buffer>(scaled, size);
         transparency.replaceStreamData(scaledBuf,
                                        QPDFObjectHandle::newNull(),
                                        QPDFObjectHandle::newNull());
