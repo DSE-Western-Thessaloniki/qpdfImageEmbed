@@ -71,6 +71,33 @@ TEST(ImageProviderTest, CreateFromQR) {
     delete img;
 }
 
+TEST(ImageProviderTest, CreateFromQR_EccLevelL) {
+    QRcode *qr = QRcode_encodeString("QR ECC L test", 0, QR_ECLEVEL_L,
+                                     QR_MODE_8, 1);
+    ASSERT_NE(qr, nullptr);
+    ImageProvider img(qr, logger);
+    EXPECT_EQ(img.getWidth(), qr->width);
+    QRcode_free(qr);
+}
+
+TEST(ImageProviderTest, CreateFromQR_EccLevelQ) {
+    QRcode *qr = QRcode_encodeString("QR ECC Q test", 0, QR_ECLEVEL_Q,
+                                     QR_MODE_8, 1);
+    ASSERT_NE(qr, nullptr);
+    ImageProvider img(qr, logger);
+    EXPECT_EQ(img.getWidth(), qr->width);
+    QRcode_free(qr);
+}
+
+TEST(ImageProviderTest, CreateFromQR_EccLevelH) {
+    QRcode *qr = QRcode_encodeString("QR ECC H test", 0, QR_ECLEVEL_H,
+                                     QR_MODE_8, 1);
+    ASSERT_NE(qr, nullptr);
+    ImageProvider img(qr, logger);
+    EXPECT_EQ(img.getWidth(), qr->width);
+    QRcode_free(qr);
+}
+
 // ============================================================
 // PDFProcessor tests
 // ============================================================
@@ -482,6 +509,26 @@ TEST_F(CLITest, EmbedQRSuccess) {
     int ret = runBinary(args);
     EXPECT_EQ(ret, 0);
 
+    std::ifstream f(outPath);
+    EXPECT_TRUE(f.good());
+}
+
+TEST_F(CLITest, EmbedQRWithEccL) {
+    std::vector<std::string> args = {
+        "-i", inPath, "-o", outPath, "--qr", "ecc-L-data", "--qr-ecc", "L",
+    };
+    int ret = runBinary(args);
+    EXPECT_EQ(ret, 0);
+    std::ifstream f(outPath);
+    EXPECT_TRUE(f.good());
+}
+
+TEST_F(CLITest, EmbedQRWithEccH) {
+    std::vector<std::string> args = {
+        "-i", inPath, "-o", outPath, "--qr", "ecc-H-data", "--qr-ecc", "H",
+    };
+    int ret = runBinary(args);
+    EXPECT_EQ(ret, 0);
     std::ifstream f(outPath);
     EXPECT_TRUE(f.good());
 }

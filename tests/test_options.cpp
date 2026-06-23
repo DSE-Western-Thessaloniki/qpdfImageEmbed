@@ -98,13 +98,60 @@ TEST(OptionsInvalidTest, NegativeScale) {
 TEST(OptionsTest, ValidQRInvocation) {
     int argc = 7;
     const char *argv[] = {"qpdfImageEmbed", "-i",   "in.pdf", "-o",
-                          "out.pdf",        "--qr", "test",   nullptr};
+                           "out.pdf",        "--qr", "test",   nullptr};
     auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
     EXPECT_EQ(std::get<std::string>(opts["inputPDF"]), "in.pdf");
     EXPECT_EQ(std::get<std::string>(opts["outputPDF"]), "out.pdf");
     EXPECT_EQ(std::get<std::string>(opts["qrText"]), "test");
     EXPECT_FLOAT_EQ(std::get<float>(opts["qr-scale"]), 1.0f);
     EXPECT_FLOAT_EQ(std::get<float>(opts["img-scale"]), 1.0f);
+    // Default ECC level should be M (1)
+    EXPECT_EQ(std::get<int>(opts["qr-ecc"]), 1);
+}
+
+TEST(OptionsTest, QrEccLevelL) {
+    int argc = 9;
+    const char *argv[] = {"qpdfImageEmbed", "-i",       "in.pdf", "-o",
+                           "out.pdf",        "--qr",     "test",   "--qr-ecc",
+                           "L",              nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
+    EXPECT_EQ(std::get<int>(opts["qr-ecc"]), 0);
+}
+
+TEST(OptionsTest, QrEccLevelM) {
+    int argc = 9;
+    const char *argv[] = {"qpdfImageEmbed", "-i",       "in.pdf", "-o",
+                           "out.pdf",        "--qr",     "test",   "--qr-ecc",
+                           "M",              nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
+    EXPECT_EQ(std::get<int>(opts["qr-ecc"]), 1);
+}
+
+TEST(OptionsTest, QrEccLevelQ) {
+    int argc = 9;
+    const char *argv[] = {"qpdfImageEmbed", "-i",       "in.pdf", "-o",
+                           "out.pdf",        "--qr",     "test",   "--qr-ecc",
+                           "Q",              nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
+    EXPECT_EQ(std::get<int>(opts["qr-ecc"]), 2);
+}
+
+TEST(OptionsTest, QrEccLevelH) {
+    int argc = 9;
+    const char *argv[] = {"qpdfImageEmbed", "-i",       "in.pdf", "-o",
+                           "out.pdf",        "--qr",     "test",   "--qr-ecc",
+                           "H",              nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
+    EXPECT_EQ(std::get<int>(opts["qr-ecc"]), 3);
+}
+
+TEST(OptionsInvalidTest, InvalidQrEccLevel) {
+    int argc = 9;
+    const char *argv[] = {"qpdfImageEmbed", "-i",       "in.pdf", "-o",
+                           "out.pdf",        "--qr",     "test",   "--qr-ecc",
+                           "X",              nullptr};
+    EXPECT_THROW(readCLIOptions(argc, const_cast<char **>(argv), logger),
+                 std::runtime_error);
 }
 
 TEST(OptionsInvalidTest, QrSideOutOfRange) {

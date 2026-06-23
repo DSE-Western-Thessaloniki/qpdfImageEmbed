@@ -43,9 +43,13 @@ static int processPDF(
     if (cliOption.contains("qrText")) {
         logger << "QR Text: " << std::get<std::string>(cliOption.at("qrText"))
                << "\n";
+        QRecLevel eccLevel = QR_ECLEVEL_M;
+        if (cliOption.contains("qr-ecc")) {
+            eccLevel = static_cast<QRecLevel>(std::get<int>(cliOption.at("qr-ecc")));
+        }
         QRcode *qr = QRcode_encodeString(
             std::get<std::string>(cliOption.at("qrText")).c_str(), 0,
-            QR_ECLEVEL_M, QR_MODE_8, 1);
+            eccLevel, QR_MODE_8, 1);
 
         if (qr == nullptr) {
             logger << "QRcode_encodeString failed!\n";

@@ -50,6 +50,7 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
     qrOptions.add_options()
         ("qr", value<std::string>(), "Add QR instead of image using the specified text")
         ("link", "QR value is a URL. Add clickable link")
+        ("qr-ecc", value<std::string>()->default_value("M"), "QR error correction level: L (low), M (medium), Q (quartile), H (high)")
         ("qr-side", value<int>()->default_value(0), "Side of the document: 0 center (default), 1 left, 2 right")
         ("qr-scale", value<float>()->default_value(1),"Scale QR by a factor eg. 0.5")
         ("qr-top-margin", value<float>()->default_value(10),"Set a margin for the QR placement from the top of the page")
@@ -192,6 +193,24 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
             cliOption["link"] = qrText;
         else
             cliOption["link"] = std::string();
+    }
+
+    if (vm.count("qr")) {
+        std::string eccStr = vm["qr-ecc"].as<std::string>();
+        int eccLevel;
+        if (eccStr == "L" || eccStr == "l") {
+            eccLevel = 0;
+        } else if (eccStr == "M" || eccStr == "m") {
+            eccLevel = 1;
+        } else if (eccStr == "Q" || eccStr == "q") {
+            eccLevel = 2;
+        } else if (eccStr == "H" || eccStr == "h") {
+            eccLevel = 3;
+        } else {
+            throw std::runtime_error(
+                "Invalid QR error correction level. Valid options: L, M, Q, H");
+        }
+        cliOption["qr-ecc"] = eccLevel;
     }
 
     float img_scale;
