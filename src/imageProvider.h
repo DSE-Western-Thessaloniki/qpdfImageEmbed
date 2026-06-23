@@ -17,7 +17,9 @@ class ImageProvider : public QPDFObjectHandle::StreamDataProvider {
         ImageProvider(int width, int height, Logger& logger);
         ImageProvider(const std::string& filename, Logger& logger);
         ImageProvider(std::istream& stream, Logger& logger);
-        ImageProvider(const QRcode *qr, Logger& logger);
+        ImageProvider(const QRcode *qr, Logger& logger,
+                       const Magick::Color& fg = Magick::Color("black"),
+                       const Magick::Color& bg = Magick::Color("white"));
         virtual ~ImageProvider();
         virtual void provideStreamData(int objid, int generation,
                                        Pipeline *pipeline);

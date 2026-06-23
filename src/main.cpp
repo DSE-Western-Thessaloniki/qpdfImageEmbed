@@ -60,7 +60,12 @@ static int processPDF(
         logger << "QR version: " << qr->version << "\n";
         logger << "QR width: " << qr->width << "\n";
 
-        pdf_processor.addImage(new ImageProvider(qr, logger),
+        Magick::Color fgColor(
+            std::get<std::string>(cliOption.at("qr-fg-color")));
+        Magick::Color bgColor(
+            std::get<std::string>(cliOption.at("qr-bg-color")));
+
+        pdf_processor.addImage(new ImageProvider(qr, logger, fgColor, bgColor),
                                std::get<float>(cliOption.at("qr-scale")),
                                std::get<float>(cliOption.at("qr-top-margin")),
                                std::get<float>(cliOption.at("qr-side-margin")),

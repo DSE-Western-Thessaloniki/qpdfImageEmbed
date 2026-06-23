@@ -71,6 +71,28 @@ TEST(ImageProviderTest, CreateFromQR) {
     delete img;
 }
 
+TEST(ImageProviderTest, CreateFromQR_DefaultColors) {
+    QRcode *qr = QRcode_encodeString("colors", 0, QR_ECLEVEL_M,
+                                     QR_MODE_8, 1);
+    ASSERT_NE(qr, nullptr);
+    Magick::Color fg("black");
+    Magick::Color bg("white");
+    ImageProvider img(qr, logger, fg, bg);
+    EXPECT_EQ(img.getWidth(), qr->width);
+    QRcode_free(qr);
+}
+
+TEST(ImageProviderTest, CreateFromQR_CustomColors) {
+    QRcode *qr = QRcode_encodeString("red QR", 0, QR_ECLEVEL_M,
+                                     QR_MODE_8, 1);
+    ASSERT_NE(qr, nullptr);
+    Magick::Color fg("#FF0000");
+    Magick::Color bg("#0000FF");
+    ImageProvider img(qr, logger, fg, bg);
+    EXPECT_EQ(img.getWidth(), qr->width);
+    QRcode_free(qr);
+}
+
 TEST(ImageProviderTest, CreateFromQR_EccLevelL) {
     QRcode *qr = QRcode_encodeString("QR ECC L test", 0, QR_ECLEVEL_L,
                                      QR_MODE_8, 1);
@@ -509,6 +531,17 @@ TEST_F(CLITest, EmbedQRSuccess) {
     int ret = runBinary(args);
     EXPECT_EQ(ret, 0);
 
+    std::ifstream f(outPath);
+    EXPECT_TRUE(f.good());
+}
+
+TEST_F(CLITest, EmbedQRWithCustomColors) {
+    std::vector<std::string> args = {
+        "-i", inPath, "-o", outPath, "--qr", "colored-qr",
+        "--qr-fg-color", "red", "--qr-bg-color", "blue",
+    };
+    int ret = runBinary(args);
+    EXPECT_EQ(ret, 0);
     std::ifstream f(outPath);
     EXPECT_TRUE(f.good());
 }

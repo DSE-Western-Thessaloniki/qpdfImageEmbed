@@ -52,6 +52,8 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
         ("qr", value<std::string>(), "Add QR instead of image using the specified text")
         ("link", "QR value is a URL. Add clickable link")
         ("qr-ecc", value<std::string>()->default_value("M"), "QR error correction level: L (low), M (medium), Q (quartile), H (high)")
+        ("qr-fg-color", value<std::string>()->default_value("black"), "QR foreground color (name or hex, e.g. #000000)")
+        ("qr-bg-color", value<std::string>()->default_value("white"), "QR background color (name or hex, e.g. #FFFFFF)")
         ("qr-side", value<int>()->default_value(0), "Side of the document: 0 center (default), 1 left, 2 right")
         ("qr-scale", value<float>()->default_value(1),"Scale QR by a factor eg. 0.5")
         ("qr-top-margin", value<float>()->default_value(10),"Set a margin for the QR placement from the top of the page")
@@ -212,6 +214,9 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
                 "Invalid QR error correction level. Valid options: L, M, Q, H");
         }
         cliOption["qr-ecc"] = eccLevel;
+
+        cliOption["qr-fg-color"] = vm["qr-fg-color"].as<std::string>();
+        cliOption["qr-bg-color"] = vm["qr-bg-color"].as<std::string>();
     }
 
     float img_scale;
