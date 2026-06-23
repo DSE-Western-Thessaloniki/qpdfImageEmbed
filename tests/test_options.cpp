@@ -107,6 +107,9 @@ TEST(OptionsTest, ValidQRInvocation) {
     EXPECT_FLOAT_EQ(std::get<float>(opts["img-scale"]), 1.0f);
     // Default ECC level should be M (1)
     EXPECT_EQ(std::get<int>(opts["qr-ecc"]), 1);
+    // Default colors
+    EXPECT_EQ(std::get<std::string>(opts["qr-fg-color"]), "black");
+    EXPECT_EQ(std::get<std::string>(opts["qr-bg-color"]), "white");
 }
 
 TEST(OptionsTest, QrEccLevelL) {
@@ -152,6 +155,26 @@ TEST(OptionsInvalidTest, InvalidQrEccLevel) {
                            "X",              nullptr};
     EXPECT_THROW(readCLIOptions(argc, const_cast<char **>(argv), logger),
                  std::runtime_error);
+}
+
+TEST(OptionsTest, QrDefaultColors) {
+    int argc = 7;
+    const char *argv[] = {"qpdfImageEmbed", "-i",   "in.pdf", "-o",
+                           "out.pdf",        "--qr", "test",   nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
+    EXPECT_EQ(std::get<std::string>(opts["qr-fg-color"]), "black");
+    EXPECT_EQ(std::get<std::string>(opts["qr-bg-color"]), "white");
+}
+
+TEST(OptionsTest, QrCustomColors) {
+    int argc = 11;
+    const char *argv[] = {"qpdfImageEmbed", "-i",           "in.pdf", "-o",
+                           "out.pdf",        "--qr",         "test",
+                           "--qr-fg-color",  "#FF0000",      "--qr-bg-color",
+                           "#00FF00",        nullptr};
+    auto opts = readCLIOptions(argc, const_cast<char **>(argv), logger);
+    EXPECT_EQ(std::get<std::string>(opts["qr-fg-color"]), "#FF0000");
+    EXPECT_EQ(std::get<std::string>(opts["qr-bg-color"]), "#00FF00");
 }
 
 TEST(OptionsInvalidTest, QrSideOutOfRange) {

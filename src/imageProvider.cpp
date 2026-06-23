@@ -37,17 +37,22 @@ ImageProvider::ImageProvider(std::istream &stream, Logger &logger)
     processImage();
 }
 
-ImageProvider::ImageProvider(const QRcode *qr, Logger &logger)
+ImageProvider::ImageProvider(const QRcode *qr, Logger &logger,
+                             const Magick::Color &fg, const Magick::Color &bg)
     : m_logger(logger) {
     this->qr = qr;
 
-    Magick::Image image(Magick::Geometry(qr->width, qr->width),
-                        Magick::Color(Quantum(0), Quantum(0), Quantum(0),
-                                      Quantum(QuantumRange)));
+    // Background: use bg color with transparent alpha so the SMask
+    // reveals the PDF page behind non-module areas
+    Magick::Color bgColor(
+        bg.quantumRed(), bg.quantumGreen(), bg.quantumBlue(), 0);
+    Magick::Image image(Magick::Geometry(qr->width, qr->width), bgColor);
 
-    Magick::Color black("black");
-    image.fillColor(black);
-    image.strokeColor(black);
+    // Foreground: use fg color with opaque alpha for QR modules
+    Magick::Color fgColor(
+        fg.quantumRed(), fg.quantumGreen(), fg.quantumBlue(), QuantumRange);
+    image.fillColor(fgColor);
+    image.strokeColor(fgColor);
 
     int cellSize = 1;
 
