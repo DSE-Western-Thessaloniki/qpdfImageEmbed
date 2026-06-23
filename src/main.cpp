@@ -69,7 +69,9 @@ static int processPDF(
                                std::get<float>(cliOption.at("qr-scale")),
                                std::get<float>(cliOption.at("qr-top-margin")),
                                std::get<float>(cliOption.at("qr-side-margin")),
-                               std::get<std::string>(cliOption.at("link")));
+                               std::get<std::string>(cliOption.at("link")),
+                               nullptr,
+                               std::get<float>(cliOption.at("img-opacity")));
     }
 
     int img_side = 0;
@@ -88,18 +90,21 @@ static int processPDF(
             imgProvider = new ImageProvider(imageFile, logger);
         }
 
+        float opacity = std::get<float>(cliOption.at("img-opacity"));
         if (cliOption.contains("img-x")) {
             Point p(std::get<float>(cliOption.at("img-x")),
                     std::get<float>(cliOption.at("img-y")));
             pdf_processor.addImage(
                 imgProvider, std::get<float>(cliOption.at("img-scale")), 0, 0,
-                std::get<std::string>(cliOption.at("img-link-to")), &p);
+                std::get<std::string>(cliOption.at("img-link-to")), &p,
+                opacity);
         } else {
             pdf_processor.addImage(
                 imgProvider, std::get<float>(cliOption.at("img-scale")),
                 std::get<float>(cliOption.at("img-top-margin")),
                 std::get<float>(cliOption.at("img-side-margin")),
-                std::get<std::string>(cliOption.at("img-link-to")));
+                std::get<std::string>(cliOption.at("img-link-to")),
+                nullptr, opacity);
         }
     }
 

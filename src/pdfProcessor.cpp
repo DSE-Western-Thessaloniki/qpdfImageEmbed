@@ -1,8 +1,10 @@
 #include "pdfProcessor.h"
 #include "imageProvider.h"
 #include "logger.h"
+#include <qpdf/Buffer.hh>
 #include <qpdf/QPDFMatrix.hh>
 #include <qpdf/QPDFObjectHandle.hh>
+#include <memory>
 #include <random>
 #include <stdexcept>
 
@@ -125,7 +127,8 @@ std::string PDFProcessor::createNewImageName(const std::string& prefix) {
     return newName;
 }
 
-void PDFProcessor::createImageStream(ImageProvider *p, const std::string& name) {
+void PDFProcessor::createImageStream(ImageProvider *p, const std::string& name,
+                                     float opacity) {
     // Image object
     QPDFObjectHandle image = QPDFObjectHandle::newStream(&m_pdf);
     std::string imageString = std::string("<<"
@@ -158,26 +161,37 @@ void PDFProcessor::createImageStream(ImageProvider *p, const std::string& name) 
                                           std::to_string(p->getHeight()) + ">>";
     m_logger << "Transparency image string: " << transparencyImageString << "\n";
     transparency.replaceDict(QPDFObjectHandle::parse(transparencyImageString));
-    // Provide the stream data.
-    auto transparencyProvider = p->getAlpha();
-    m_logger << "Buffer size: " << transparencyProvider.get()->getSize() << "\n";
-    transparency.replaceStreamData(transparencyProvider,
-                                   QPDFObjectHandle::newNull(),
-                                   QPDFObjectHandle::newNull());
+
+    // Provide the stream data, scaling alpha by opacity if needed
+    auto alphaBuf = p->getAlpha();
+    m_logger << "Buffer size: " << alphaBuf->getSize() << "\n";
+    if (opacity < 1.0f) {
+        size_t size = alphaBuf->getSize();
+        unsigned char *raw = alphaBuf->getBuffer();
+        unsigned char *scaled = new unsigned char[size];
+        for (size_t i = 0; i < size; i++) {
+            scaled[i] = static_cast<unsigned char>(raw[i] * opacity);
+        }
+        auto scaledBuf = std::make_shared<Buffer>(scaled, size);
+        transparency.replaceStreamData(scaledBuf,
+                                       QPDFObjectHandle::newNull(),
+                                       QPDFObjectHandle::newNull());
+    } else {
+        transparency.replaceStreamData(alphaBuf,
+                                       QPDFObjectHandle::newNull(),
+                                       QPDFObjectHandle::newNull());
+    }
     m_xobject.replaceKey("/" + name + "tr", transparency);
-    std::string smaskString =
-        std::string(std::to_string(transparency.getObjectID()) + " " +
-                    std::to_string(transparency.getGeneration()) + " R");
     m_pdf.updateAllPagesCache();
     image.getDict().replaceKey("/SMask", transparency);
 }
 
 void PDFProcessor::addImage(ImageProvider *p, float scale, float topMargin,
                             float sideMargin, const std::string& link,
-                            Point *exactPosition) {
+                            Point *exactPosition, float opacity) {
 
     std::string imageName = createNewImageName("ImEPStampR");
-    createImageStream(p, imageName);
+    createImageStream(p, imageName, opacity);
 
     // To prevent our image appearing in unexpected places we save the initial
     // state at the beginning of the page and restore it at the end before
