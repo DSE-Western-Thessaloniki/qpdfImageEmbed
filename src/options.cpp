@@ -3,6 +3,7 @@
 #include <boost/program_options.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <iostream>
+#include <qrencode.h>
 #include <stdexcept>
 
 using namespace boost::program_options;
@@ -199,13 +200,13 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
         std::string eccStr = vm["qr-ecc"].as<std::string>();
         int eccLevel;
         if (eccStr == "L" || eccStr == "l") {
-            eccLevel = 0;
+            eccLevel = QR_ECLEVEL_L;
         } else if (eccStr == "M" || eccStr == "m") {
-            eccLevel = 1;
+            eccLevel = QR_ECLEVEL_M;
         } else if (eccStr == "Q" || eccStr == "q") {
-            eccLevel = 2;
+            eccLevel = QR_ECLEVEL_Q;
         } else if (eccStr == "H" || eccStr == "h") {
-            eccLevel = 3;
+            eccLevel = QR_ECLEVEL_H;
         } else {
             throw std::runtime_error(
                 "Invalid QR error correction level. Valid options: L, M, Q, H");
@@ -274,16 +275,16 @@ readCLIOptions(int argc, char *argv[], Logger &logger) {
     }
 
     bool hasInputFile = vm.count("input-file") && vm.count("output-file");
-    bool hasInputDir  = vm.count("input-dir") && vm.count("output-dir");
+    bool hasInputDir = vm.count("input-dir") && vm.count("output-dir");
 
     if (!hasInputFile && !hasInputDir) {
-        throw std::runtime_error(
-            "Specify either --input-file/--output-file or --input-dir/--output-dir");
+        throw std::runtime_error("Specify either --input-file/--output-file or "
+                                 "--input-dir/--output-dir");
     }
 
     if (hasInputFile && hasInputDir) {
-        throw std::runtime_error(
-            "Cannot use both --input-file/--output-file and --input-dir/--output-dir");
+        throw std::runtime_error("Cannot use both --input-file/--output-file "
+                                 "and --input-dir/--output-dir");
     }
 
     if (vm.count("input-dir")) {
