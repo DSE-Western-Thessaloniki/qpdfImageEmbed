@@ -3,10 +3,16 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to rebuild (for example, v0.4.2)
+        required: true
+        type: string
 
 jobs:
   deb:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -19,10 +25,19 @@ jobs:
             image: ubuntu:26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Extract version from tag
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if [[ "${RELEASE_TAG}" != v* ]]; then
+            echo "Release tag must start with v" >&2
+            exit 1
+          fi
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Build deb in container
         run: |
@@ -43,7 +58,7 @@ jobs:
               apt-get install -y --no-install-recommends \
                 build-essential cmake pkg-config dpkg-dev \
                 libqpdf-dev \
-                libmagick++-7.q16-dev \
+                libmagick++-dev \
                 libqrencode-dev \
                 libboost-program-options-dev
 
@@ -58,18 +73,32 @@ jobs:
               mkdir -p "${PKGNAME}/DEBIAN"
               cp -a /tmp/staging/usr "${PKGNAME}/usr"
 
-              RUNTIME_DEPS=$(dpkg-shlibdeps -O \
-                build/src/qpdfImageEmbed \
-                build/tests/test_integration \
-                2>/dev/null \
-                | tail -1 \
-                | sed "s/^shlibs:Depends=//" || true)
+              SHLIBDEPS_DIR="$(mktemp -d)"
+              trap '\''rm -rf "${SHLIBDEPS_DIR}"'\'' EXIT
+              mkdir -p "${SHLIBDEPS_DIR}/debian/qpdfimageembed/usr/bin"
+              cp "${PKGNAME}/usr/bin/qpdfImageEmbed" \
+                "${SHLIBDEPS_DIR}/debian/qpdfimageembed/usr/bin/"
+              printf "%s\n" \
+                "Source: qpdfimageembed" \
+                "Section: utils" \
+                "Priority: optional" \
+                "Maintainer: oscar" \
+                "Standards-Version: 4.6.2" \
+                "" \
+                "Package: qpdfimageembed" \
+                "Architecture: any" \
+                "Description: PDF utility that stamps images, QR codes, and text onto existing PDF pages" \
+                > "${SHLIBDEPS_DIR}/debian/control"
 
+              RUNTIME_DEPS=$(cd "${SHLIBDEPS_DIR}" && \
+                dpkg-shlibdeps -O debian/qpdfimageembed/usr/bin/qpdfImageEmbed \
+                  | sed -n "s/^shlibs:Depends=//p")
               if [ -z "${RUNTIME_DEPS}" ]; then
-                RUNTIME_DEPS="libqpdf29, libmagick++-7.q16-11, libqrencode4, libboost-program-options1.83.0"
+                echo "dpkg-shlibdeps did not produce runtime dependencies" >&2
+                exit 1
               fi
 
-              printf "Package: qpdfImageEmbed\n" > "${PKGNAME}/DEBIAN/control"
+              printf "Package: qpdfimageembed\n" > "${PKGNAME}/DEBIAN/control"
               printf "Version: %s\n" "${VERSION}" >> "${PKGNAME}/DEBIAN/control"
               printf "Architecture: amd64\n" >> "${PKGNAME}/DEBIAN/control"
               printf "Depends: %s\n" "${RUNTIME_DEPS}" >> "${PKGNAME}/DEBIAN/control"
@@ -89,7 +118,7 @@ jobs:
 
   release:
     needs: deb
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
     steps:
@@ -101,4 +130,6 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          overwrite_files: true
           files: debs/*.deb
